@@ -1,0 +1,12 @@
+{
+    "id": "tuxscr",
+    "name": "TuxSCR – Screen Converter",
+    "version": "@PROJECT_VERSION@",
+    "api": 1,
+    "author": "a C++ port of ConvImgCpc",
+    "licence": "see LICENSE",
+    "description": "Converts pictures into Amstrad CPC and Plus screens (modes 0 to 2, overscan, EGX, mode X, split rasters, ASCII), edits them, and writes them as files, assembler sources or disc images. On a Plus, changes the palette at chosen lines with interrupts.",
+    "libraries": {
+        "@TUXSCR_PLATFORM@": "@TUXSCR_PLATFORM@/@CMAKE_SHARED_MODULE_PREFIX@tuxscr@CMAKE_SHARED_MODULE_SUFFIX@"
+    }
+}

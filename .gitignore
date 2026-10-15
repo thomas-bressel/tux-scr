@@ -1,0 +1,9 @@
+# Build output and the archives made of it
+/build*/
+/dist/
+
+# ConvImgCpc, cloned here as the reference the port is checked against: it
+# is its author's, not ours to version.
+/ConvImgCpc/
+
+CMakeUserPresets.json
