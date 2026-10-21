@@ -282,7 +282,7 @@ bool Document::readFile(const QString& path, bool single)
         }
         if (!single) {
             setSources(pictures, time);
-            say(pictures.size() > 1 ? tr("PC picture read: an animation of %n pictures.", nullptr, static_cast<int>(pictures.size()))
+            say(pictures.size() > 1 ? tr("PC picture read: an animation of %n picture(s).", nullptr, static_cast<int>(pictures.size()))
                                     : tr("PC picture read."));
         } else {
             importSource(pictures.first(), current_);
@@ -743,10 +743,10 @@ bool Document::saveAnimation(const QString& path, const AnimOptions& options)
             say(tr("Saving the animation as a source..."));
             break;
         case AnimNote::BytesLost:
-            say(tr("%Ln bytes lost...", nullptr, note.bytes));
+            say(tr("%Ln byte(s) lost...", nullptr, note.bytes));
             break;
         case AnimNote::TotalLength:
-            say(tr("The animation's data take %Ln bytes in all.", nullptr, note.bytes));
+            say(tr("The animation's data take %Ln byte(s) in all.", nullptr, note.bytes));
             break;
         case AnimNote::Overflow:
             say(tr("More than the memory holds..."));

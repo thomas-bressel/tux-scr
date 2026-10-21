@@ -249,7 +249,7 @@ QWidget* ConverterWindow::buildSettings()
             return;
         const int frames = single->isChecked() ? 1 : count->value();
         document_.setBlankFrames(frames);
-        document_.say(frames == 1 ? texts::text("Main.prg.TxtInfo14") : tr("Animation creation with %n pictures.", nullptr, frames));
+        document_.say(frames == 1 ? texts::text("Main.prg.TxtInfo14") : tr("Animation creation with %n picture(s).", nullptr, frames));
         document_.resetPictures(true);
         document_.convert(false);
     });

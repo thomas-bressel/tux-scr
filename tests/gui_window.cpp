@@ -22,6 +22,7 @@
 #include <QTest>
 
 #include "check.h"
+#include "english.h"
 #include "contrast.h"
 #include "converterwindow.h"
 #include "french.h"
@@ -86,6 +87,7 @@ void checkNames(QWidget* window, const char* language)
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    const English english;
     const QString prefix = argc > 1 ? QString::fromLocal8Bit(argv[1]) : QString();
     prompts::setProblemHandler([](const QString&) {});
 

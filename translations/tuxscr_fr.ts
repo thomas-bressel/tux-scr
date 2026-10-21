@@ -255,7 +255,7 @@
         <translation>TuxSCR – Convertisseur d&apos;écrans</translation>
     </message>
     <message numerus="yes">
-        <source>Animation creation with %n pictures.</source>
+        <source>Animation creation with %n picture(s).</source>
         <translation>
             <numerusform>Création animation avec %n image.</numerusform>
             <numerusform>Création animation avec %n images.</numerusform>
@@ -407,7 +407,7 @@
         </translation>
     </message>
     <message numerus="yes">
-        <source>PC picture read: an animation of %n pictures.</source>
+        <source>PC picture read: an animation of %n picture(s).</source>
         <translation>
             <numerusform>Lecture image PC de type animation avec %n image.</numerusform>
             <numerusform>Lecture image PC de type animation avec %n images.</numerusform>
@@ -486,14 +486,14 @@
         <translation>Début sauvegarde animation assembleur...</translation>
     </message>
     <message numerus="yes">
-        <source>%Ln bytes lost...</source>
+        <source>%Ln byte(s) lost...</source>
         <translation>
             <numerusform>Perte de %Ln octet...</numerusform>
             <numerusform>Perte de %Ln octets...</numerusform>
         </translation>
     </message>
     <message numerus="yes">
-        <source>The animation&apos;s data take %Ln bytes in all.</source>
+        <source>The animation&apos;s data take %Ln byte(s) in all.</source>
         <translation>
             <numerusform>Longueur totale données animation : %Ln octet.</numerusform>
             <numerusform>Longueur totale données animation : %Ln octets.</numerusform>

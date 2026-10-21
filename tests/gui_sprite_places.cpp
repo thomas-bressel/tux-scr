@@ -23,6 +23,7 @@
 #include <QTest>
 
 #include "check.h"
+#include "english.h"
 #include "french.h"
 #include "converterwindow.h"
 #include "gui_looks.h"
@@ -54,6 +55,7 @@ QByteArray fileText(const QString& path)
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    const English english;
     const QString prefix = argc > 1 ? QString::fromLocal8Bit(argv[1]) : QString();
     QTemporaryDir scratch;
     QStringList told;

@@ -206,13 +206,19 @@ contrôle (`Main.bpLoad`) : en anglais dans `src/plugin/windowtexts.h`, que
 `tools/make_tables.py` recopie du `Multilingue.cs` de ConvImgCpc, et dans les
 tables de TuxSCR pour ce qu'il ajoute. Leur traduction, avec celle de tous
 les autres textes, est dans `translations/tuxscr_fr.ts`, compilée dans la
-bibliothèque et chargée au démarrage du plugin. Après un changement des
-textes :
+bibliothèque et chargée au démarrage du plugin.
+
+Les sources disent les pluriels avec « (s) » (`%n file(s)`) ; l'anglais a ses
+formes, « 1 file », « 3 files », dans `translations/tuxscr_en.ts`, qui ne
+contient qu'elles.
+
+Après un changement des textes :
 
 ```sh
 cmake --build build --target tuxscr_update_translations   # lupdate
 tools/make_tables.py --french translations/tuxscr_fr.ts    # le français de ConvImgCpc, pour ses textes
 linguist translations/tuxscr_fr.ts                         # traduire le reste de ce qui est nouveau
+linguist translations/tuxscr_en.ts                         # et les pluriels anglais
 cmake --build build
 ```
 

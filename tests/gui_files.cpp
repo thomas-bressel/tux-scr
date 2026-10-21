@@ -20,6 +20,7 @@
 
 #include "animationpanel.h"
 #include "check.h"
+#include "english.h"
 #include "converterwindow.h"
 #include "formats/amsdos.h"
 #include "formats/dsk.h"
@@ -70,6 +71,7 @@ void acceptNext(const char* name)
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    const English english;
     QTemporaryDir scratch;
     QStringList told;
     prompts::setProblemHandler([&told](const QString& text) { told << text; });

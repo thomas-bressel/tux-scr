@@ -21,6 +21,7 @@
 #include <QTimer>
 
 #include "check.h"
+#include "english.h"
 #include "french.h"
 #include "converterwindow.h"
 #include "gui_looks.h"
@@ -95,6 +96,7 @@ void checkSums()
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    const English english;
     const QString prefix = argc > 1 ? QString::fromLocal8Bit(argv[1]) : QString();
     QStringList told;
     prompts::setProblemHandler([&told](const QString& text) { told << text; });

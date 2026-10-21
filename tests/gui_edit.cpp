@@ -18,6 +18,7 @@
 #include <QTest>
 
 #include "check.h"
+#include "english.h"
 #include "converterwindow.h"
 #include "edittools.h"
 #include "formats/amsdos.h"
@@ -32,6 +33,7 @@ using namespace tuxscr;
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
+    const English english;
     const QString prefix = argc > 1 ? QString::fromLocal8Bit(argv[1]) : QString();
     QTemporaryDir scratch;
     QStringList told;

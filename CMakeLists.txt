@@ -60,7 +60,7 @@ tuxape_add_plugin(tuxscr
     API 4
     FILES LICENSE
     PROGRAMS tuxscr_cli
-    TRANSLATIONS translations/tuxscr_fr.ts
+    TRANSLATIONS translations/tuxscr_en.ts translations/tuxscr_fr.ts
     TRANSLATE_TARGETS tuxscr_ui)
 
 if(TUXSCR_BUILD_TESTS)
