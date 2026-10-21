@@ -81,6 +81,34 @@ std::string matrixAsm(const Screen& screen, const Picture& picture, const Param&
                       const AsmStamp& stamp);
 // The picture as the data of a bump effect.
 std::string bumpAsm(const Screen& screen, const Picture& picture, const Param& param, const AsmStamp& stamp);
+// The pictures of an animation as the data of a tunnel effect: each one's
+// colours averaged over blocks of the screen, then the table of them.
+std::string tunnelAsm(const Screen& screen, const std::vector<Picture>& pictures);
+// What changes from one picture of an animation to the next, in a source:
+// the runs of bytes of the screen's memory that differ, each with its
+// address and its length.
+std::string diffImagesAsm(const Screen& screen, const std::vector<Picture>& pictures, const AsmStamp& stamp);
+
+// A block of the picture, `width` pixels by `height` lines at (x, y), given
+// as its bytes: as an OCP window's data (its bytes, then its size), or in a
+// source with `bytesPerLine` bytes a line of DB.
+std::vector<uint8_t> blockWindow(const std::vector<uint8_t>& bytes, int width, int height);
+std::string blockAsm(const Screen& screen, const std::vector<uint8_t>& bytes, int width, int height, int x, int y,
+                     int bytesPerLine, const AsmStamp& stamp);
+
+// The picture cut into tiles of `width` pixels by `height` lines, row after
+// row or column after column, in a source: each tile's bytes, or all of
+// them packed with `pack` (None: not packed); the palette after if the
+// settings ask.
+struct TilesetOptions {
+    int width = 8;
+    int height = 8;
+    bool byRows = true;
+    bool packed = false;
+    PackMethod pack = PackMethod::None;
+};
+std::string tilesetAsm(const Screen& screen, const Picture& picture, const Param& param, const AsmLabels& labels,
+                       const TilesetOptions& options);
 
 // ---- Reading a screen back ----
 

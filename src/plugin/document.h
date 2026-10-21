@@ -47,6 +47,8 @@ public:
 
     // ---- Frames ----
     int frameCount() const { return static_cast<int>(frames_.size()); }
+    // Every frame's picture, in order.
+    std::vector<tuxscr::Picture> pictures() const;
     int current() const { return current_; }
     void select(int frame, bool quiet = false);
     // How long a frame stays, in milliseconds; 0 for a picture.

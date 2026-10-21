@@ -616,93 +616,21 @@ bool Document::saveMatrix(const QString& path)
 
 bool Document::saveTunnel(const QString& path)
 {
-    using namespace asmgen;
-    AsmText sw(screen);
-    const int incy = std::max(2, screen.height() / 12);
-    const int incx = std::max(2, screen.width() / 16);
-    for (int i = 0; i < frameCount(); ++i) {
-        const Bitmap drawn = render(screen, picture(i));
-        sw.WriteLine(S("DataImage") + dec(i, 3));
-        for (int y = 0; y < screen.height(); y += incy) {
-            int totv = 0, divv = 0;
-            Text s = S("");
-            for (int x = 0; x < screen.width(); x += incx) {
-                int div = 0, totr = 0, totb = 0;
-                for (int yy = 0; yy < incy; yy += 2)
-                    for (int xx = 0; xx < incx; xx += 2) {
-                        const Rgb colour = drawn.colour(x + xx, y + yy);
-                        totr += colour.r;
-                        totv += colour.g;
-                        totb += colour.b;
-                        div += 17;
-                        divv += 17;
-                    }
-                totr = std::min(15, (totr / div) + (totv / (div * 2)));
-                totb = std::min(15, (totb / div) + (totv / (div * 8)));
-                s += S("#") + hex(totr, 1) + hex(totb, 1);
-                if (x < screen.width() - incx)
-                    s += S(",");
-            }
-            sw.WriteLine(S("\tDB\t#") + hex(totv / divv, 2) + S(",") + s);
-        }
-    }
-    sw.WriteLine(S(""));
-    sw.WriteLine(S("Anim"));
-    for (int i = 0; i < frameCount(); ++i)
-        sw.WriteLine(S("	DW	DataImage") + dec(i, 3));
-    sw.WriteLine(S("	DW	0"));
-    return write(path, sw.text());
+    return write(path, tunnelAsm(screen, pictures()));
 }
 
 bool Document::saveDiffImages(const QString& path)
 {
-    using namespace asmgen;
     say(tr("Saving the frames' differences as a source..."));
-    AsmText sw(screen);
-    WriteHeader(sw, Text(stamp().version), true);
-    sw.WriteLine(S("\tnolist"));
-    std::vector<uint8_t> before;
-    for (int i = 0; i < frameCount(); ++i) {
-        const std::vector<uint8_t> now = screenMemory(screen, picture(i));
-        if (i > 0) {
-            sw.WriteLine(S("DiffImage_") + dec(i) + S(":"));
-            // Runs of bytes that changed, each with its address.
-            size_t m = 0;
-            bool any = false;
-            while (m < now.size()) {
-                if (now[m] == before[m]) {
-                    ++m;
-                    continue;
-                }
-                size_t end = m;
-                while (end < now.size() && now[end] != before[end])
-                    ++end;
-                any = true;
-                const int length = static_cast<int>(end - m);
-                sw.WriteLine(S("\tDW\t#") + hex(static_cast<int>(m), 4) + S("\t;adresse"));
-                sw.WriteLine(S("\tDB\t#") + hex(length, 2) + S("\t;nbre octets"));
-                Text line = S("\tDB\t");
-                int count = 0;
-                for (size_t b = m; b < end; ++b) {
-                    line += S("#") + hex(now[b], 2) + S(",");
-                    if (++count >= std::min(32, screen.columns)) {
-                        sw.WriteLine(line.Substring(0, line.Length() - 1));
-                        line = S("\tDB\t");
-                        count = 0;
-                    }
-                }
-                if (count > 0)
-                    sw.WriteLine(line.Substring(0, line.Length() - 1));
-                m = end;
-            }
-            if (any)
-                sw.WriteLine(S("\tDW\t#0000\t;fin de table"));
-        }
-        before = now;
-    }
-    sw.WriteLine(S("\tlist"));
-    sw.WriteLine(S("\tDW\t#0000;\tFin anim"));
-    return write(path, sw.text());
+    return write(path, diffImagesAsm(screen, pictures(), stamp()));
+}
+
+std::vector<tuxscr::Picture> Document::pictures() const
+{
+    std::vector<tuxscr::Picture> all;
+    for (const Frame& frame : frames_)
+        all.push_back(frame.picture);
+    return all;
 }
 
 // The frames that were never converted are, before all of them are saved.

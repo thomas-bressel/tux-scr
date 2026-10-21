@@ -22,7 +22,6 @@
 #include "controls.h"
 #include "converterwindow.h"
 #include "formats/amsdos.h"
-#include "formats/asmgen.h"
 #include "pictures.h"
 #include "pictureview.h"
 #include "prompts.h"
@@ -861,7 +860,6 @@ void EditTools::saveBlock()
 {
     if (blockWidth_ <= 0)
         return;
-    using namespace asmgen;
     int chosen = 0;
     const QString path = prompts::saveName(window_, tr("Save Win"), QString::fromStdString(document_->param.lastSavePath),
                                            {tr("OCP window (*.win)"), tr("Raw assembler data (*.asm)"),
@@ -871,22 +869,15 @@ void EditTools::saveBlock()
         return;
     bool written = false;
     if (chosen == 0) {
-        std::vector<uint8_t> data = blockBytes(false);
-        data.push_back(static_cast<uint8_t>(blockWidth_ & 0xFF));
-        data.push_back(static_cast<uint8_t>(blockWidth_ >> 8));
-        data.push_back(static_cast<uint8_t>((blockHeight_ >> 1) & 0xFF));
-        data.push_back(static_cast<uint8_t>(blockHeight_ >> 9));
+        const std::vector<uint8_t> data = blockWindow(blockBytes(false), blockWidth_, blockHeight_);
         written = writeHostFile(path, withAmsdosHeader(path.toStdString(), 0x4000, 0xCACA, data));
     } else {
-        const std::vector<uint8_t> data = blockBytes(chosen == 2);
-        AsmText sw(document_->screen);
-        WriteHeader(sw, Text(Document::stamp().version));
         const QRect rect = QRect(dragFrom_, dragTo_).normalized();
-        sw.WriteLine(S(";Width:") + dec(blockWidth_) + S(", Height:") + dec(blockHeight_));
-        sw.WriteLine(S(";Posx:") + dec(rect.left()) + S(", Posy:") + dec(rect.top()));
-        if (!data.empty())
-            GenereDatas(sw, data.data(), static_cast<int>(data.size()), chosen == 1 ? (blockWidth_ + 7) >> 3 : blockHeight_ >> 1);
-        written = writeHostText(path, sw.text());
+        const int bytesPerLine = chosen == 1 ? (blockWidth_ + 7) >> 3 : blockHeight_ >> 1;
+        tuxscr::AsmStamp version;
+        version.version = Document::stamp().version;
+        written = writeHostText(path, blockAsm(document_->screen, blockBytes(chosen == 2), blockWidth_, blockHeight_,
+                                               rect.left(), rect.top(), bytesPerLine, version));
     }
     if (!written)
         document_->fail(tr("Cannot write %1").arg(path));
@@ -932,54 +923,21 @@ void EditTools::loadBlock()
 
 void EditTools::saveTileset()
 {
-    using namespace asmgen;
     const QString path = prompts::saveName(window_, tr("Save as Tileset"), QString::fromStdString(document_->param.lastSavePath),
                                            {tr("Bitmapfont (*.asm)")});
     if (path.isEmpty())
         return;
-    AsmLabels labels;
+    tuxscr::AsmLabels labels;
     if (!window_->askLabels(tr("Bitmap tiles"), QFileInfo(path).completeBaseName(), labels))
         return;
-    const Screen& screen = document_->screen;
-    const Picture& picture = document_->picture();
-    const int sizeX = tilesSizeX_->value() * screen.pixelWidth(0);
-    const int sizeY = tilesSizeY_->value() * 2;
-    AsmText sw(screen);
-    WriteHeader(sw);
-    sw.WriteLine(Text(labels.media));
-    std::vector<uint8_t> all;
-    const auto cell = [&](int x, int y) {
-        const std::vector<uint8_t> tile = spriteBytes(screen, picture, x, y, sizeX, sizeY);
-        if (chkPack_->isChecked()) {
-            all.insert(all.end(), tile.begin(), tile.end());
-        } else {
-            if (!tile.empty())
-                GenereDatas(sw, tile.data(), static_cast<int>(tile.size()), sizeX >> 3, 0, Text(), true);
-            sw.WriteLine(S(";"));
-        }
-        return static_cast<int>(tile.size());
-    };
-    int total = 0;
-    if (rbRows_->isChecked()) {
-        for (int y = 0; y < screen.height(); y += sizeY)
-            for (int x = 0; x < screen.width(); x += sizeX)
-                total += cell(x, y);
-    } else {
-        for (int x = 0; x < screen.width(); x += sizeX)
-            for (int y = 0; y < screen.height(); y += sizeY)
-                total += cell(x, y);
-    }
-    if (chkPack_->isChecked()) {
-        const PackMethod method = document_->packMethod == PackMethod::ZX0Ovs ? PackMethod::ZX0 : document_->packMethod;
-        const std::vector<uint8_t> packed = method == PackMethod::None ? all : pack(all, method);
-        if (!packed.empty())
-            GenereDatas(sw, packed.data(), static_cast<int>(packed.size()), 16);
-    } else {
-        sw.WriteLine(S("; Taille totale ") + dec(total) + S(" octets"));
-    }
-    if (document_->param.withPalette)
-        GenerePalette(sw, document_->param, false, false, Text(labels.palette));
-    if (!writeHostText(path, sw.text())) {
+    const tuxscr::Screen& screen = document_->screen;
+    tuxscr::TilesetOptions options;
+    options.width = tilesSizeX_->value() * screen.pixelWidth(0);
+    options.height = tilesSizeY_->value() * 2;
+    options.byRows = rbRows_->isChecked();
+    options.packed = chkPack_->isChecked();
+    options.pack = document_->packMethod == tuxscr::PackMethod::ZX0Ovs ? tuxscr::PackMethod::ZX0 : document_->packMethod;
+    if (!writeHostText(path, tilesetAsm(screen, document_->picture(), document_->param, labels, options))) {
         document_->fail(tr("Cannot write %1").arg(path));
         return;
     }

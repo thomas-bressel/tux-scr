@@ -354,6 +354,160 @@ std::string bumpAsm(const Screen& screen, const Picture& picture, const Param& p
     return sw.text();
 }
 
+std::string tunnelAsm(const Screen& screen, const std::vector<Picture>& pictures)
+{
+    using namespace asmgen;
+    AsmText sw(screen);
+    const int incy = std::max(2, screen.height() / 12);
+    const int incx = std::max(2, screen.width() / 16);
+    for (size_t i = 0; i < pictures.size(); ++i) {
+        const Bitmap drawn = render(screen, pictures[i]);
+        sw.WriteLine(S("DataImage") + dec(static_cast<int>(i), 3));
+        for (int y = 0; y < screen.height(); y += incy) {
+            int totv = 0, divv = 0;
+            Text s = S("");
+            for (int x = 0; x < screen.width(); x += incx) {
+                int div = 0, totr = 0, totb = 0;
+                for (int yy = 0; yy < incy; yy += 2)
+                    for (int xx = 0; xx < incx; xx += 2) {
+                        const Rgb colour = drawn.colour(x + xx, y + yy);
+                        totr += colour.r;
+                        totv += colour.g;
+                        totb += colour.b;
+                        div += 17;
+                        divv += 17;
+                    }
+                totr = std::min(15, (totr / div) + (totv / (div * 2)));
+                totb = std::min(15, (totb / div) + (totv / (div * 8)));
+                s += S("#") + hex(totr, 1) + hex(totb, 1);
+                if (x < screen.width() - incx)
+                    s += S(",");
+            }
+            sw.WriteLine(S("\tDB\t#") + hex(totv / divv, 2) + S(",") + s);
+        }
+    }
+    sw.WriteLine(S(""));
+    sw.WriteLine(S("Anim"));
+    for (size_t i = 0; i < pictures.size(); ++i)
+        sw.WriteLine(S("	DW	DataImage") + dec(static_cast<int>(i), 3));
+    sw.WriteLine(S("	DW	0"));
+    return sw.text();
+}
+
+std::string diffImagesAsm(const Screen& screen, const std::vector<Picture>& pictures, const AsmStamp& stamp)
+{
+    using namespace asmgen;
+    AsmText sw(screen);
+    writeHeader(sw, stamp, true);
+    sw.WriteLine(S("\tnolist"));
+    std::vector<uint8_t> before;
+    for (size_t i = 0; i < pictures.size(); ++i) {
+        const std::vector<uint8_t> now = screenMemory(screen, pictures[i]);
+        if (i > 0) {
+            sw.WriteLine(S("DiffImage_") + dec(static_cast<int>(i)) + S(":"));
+            // Runs of bytes that changed, each with its address.
+            size_t m = 0;
+            bool any = false;
+            while (m < now.size()) {
+                if (now[m] == before[m]) {
+                    ++m;
+                    continue;
+                }
+                size_t end = m;
+                while (end < now.size() && now[end] != before[end])
+                    ++end;
+                any = true;
+                const int length = static_cast<int>(end - m);
+                sw.WriteLine(S("\tDW\t#") + hex(static_cast<int>(m), 4) + S("\t;adresse"));
+                sw.WriteLine(S("\tDB\t#") + hex(length, 2) + S("\t;nbre octets"));
+                Text line = S("\tDB\t");
+                int count = 0;
+                for (size_t b = m; b < end; ++b) {
+                    line += S("#") + hex(now[b], 2) + S(",");
+                    if (++count >= std::min(32, screen.columns)) {
+                        sw.WriteLine(line.Substring(0, line.Length() - 1));
+                        line = S("\tDB\t");
+                        count = 0;
+                    }
+                }
+                if (count > 0)
+                    sw.WriteLine(line.Substring(0, line.Length() - 1));
+                m = end;
+            }
+            if (any)
+                sw.WriteLine(S("\tDW\t#0000\t;fin de table"));
+        }
+        before = now;
+    }
+    sw.WriteLine(S("\tlist"));
+    sw.WriteLine(S("\tDW\t#0000;\tFin anim"));
+    return sw.text();
+}
+
+std::vector<uint8_t> blockWindow(const std::vector<uint8_t>& bytes, int width, int height)
+{
+    std::vector<uint8_t> data = bytes;
+    data.push_back(static_cast<uint8_t>(width & 0xFF));
+    data.push_back(static_cast<uint8_t>(width >> 8));
+    data.push_back(static_cast<uint8_t>((height >> 1) & 0xFF));
+    data.push_back(static_cast<uint8_t>(height >> 9));
+    return data;
+}
+
+std::string blockAsm(const Screen& screen, const std::vector<uint8_t>& bytes, int width, int height, int x, int y,
+                     int bytesPerLine, const AsmStamp& stamp)
+{
+    using namespace asmgen;
+    AsmText sw(screen);
+    writeHeader(sw, stamp, false);
+    sw.WriteLine(S(";Width:") + dec(width) + S(", Height:") + dec(height));
+    sw.WriteLine(S(";Posx:") + dec(x) + S(", Posy:") + dec(y));
+    if (!bytes.empty())
+        GenereDatas(sw, bytes.data(), static_cast<int>(bytes.size()), bytesPerLine);
+    return sw.text();
+}
+
+std::string tilesetAsm(const Screen& screen, const Picture& picture, const Param& param, const AsmLabels& labels,
+                       const TilesetOptions& options)
+{
+    using namespace asmgen;
+    AsmText sw(screen);
+    writeHeader(sw, AsmStamp{}, false);
+    sw.WriteLine(Text(labels.media));
+    std::vector<uint8_t> all;
+    const auto cell = [&](int x, int y) {
+        const std::vector<uint8_t> tile = spriteBytes(screen, picture, x, y, options.width, options.height);
+        if (options.packed) {
+            all.insert(all.end(), tile.begin(), tile.end());
+        } else {
+            if (!tile.empty())
+                GenereDatas(sw, tile.data(), static_cast<int>(tile.size()), options.width >> 3, 0, Text(), true);
+            sw.WriteLine(S(";"));
+        }
+        return static_cast<int>(tile.size());
+    };
+    int total = 0;
+    if (options.byRows) {
+        for (int y = 0; y < screen.height(); y += options.height)
+            for (int x = 0; x < screen.width(); x += options.width)
+                total += cell(x, y);
+    } else {
+        for (int x = 0; x < screen.width(); x += options.width)
+            for (int y = 0; y < screen.height(); y += options.height)
+                total += cell(x, y);
+    }
+    if (options.packed) {
+        const std::vector<uint8_t> packed = options.pack == PackMethod::None ? all : pack(all, options.pack);
+        if (!packed.empty())
+            GenereDatas(sw, packed.data(), static_cast<int>(packed.size()), 16);
+    } else {
+        sw.WriteLine(S("; Taille totale ") + dec(total) + S(" octets"));
+    }
+    if (param.withPalette)
+        GenerePalette(sw, param, false, false, Text(labels.palette));
+    return sw.text();
+}
+
 // ---- Reading a screen back ----
 
 namespace {
