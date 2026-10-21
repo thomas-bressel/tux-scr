@@ -5,6 +5,8 @@
 #include <QPalette>
 #include <QPixmap>
 
+namespace tuxscr {
+
 QIcon screenIcon()
 {
     const QColor ink = QApplication::palette().color(QPalette::WindowText);
@@ -29,3 +31,5 @@ QIcon screenIcon()
     painter.drawRect(QRectF(9.5, 5.5, 3.0, 2.5));
     return QIcon(pixmap);
 }
+
+}  // namespace tuxscr

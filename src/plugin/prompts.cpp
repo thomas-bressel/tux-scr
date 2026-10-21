@@ -5,6 +5,8 @@
 #include <QMessageBox>
 #include <QSaveFile>
 
+namespace tuxscr {
+
 namespace prompts {
 
 namespace {
@@ -115,3 +117,5 @@ bool writeHostText(const QString& path, const std::string& text)
 {
     return writeHostFile(path, std::vector<uint8_t>(text.begin(), text.end()));
 }
+
+}  // namespace tuxscr

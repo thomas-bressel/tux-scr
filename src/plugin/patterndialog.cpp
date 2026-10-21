@@ -11,23 +11,18 @@
 #include "contrast.h"
 #include "controls.h"
 #include "converterwindow.h"
-#include "engine/convert.h"
+#include "convert/convert.h"
 #include "penbutton.h"
 #include "pictures.h"
 #include "prompts.h"
 #include "texts.h"
 
-using namespace tuxscr;
+namespace tuxscr {
 
 namespace {
 
 constexpr int kCell = 60;    // a pixel of the pattern being edited
 constexpr int kSmall = 8;    // a pixel of a pattern of the row
-
-QString both(const char* french, const char* englishText)
-{
-    return QString::fromUtf8(texts::language() == QLatin1String("EN") ? englishText : french);
-}
 
 }  // namespace
 
@@ -37,7 +32,7 @@ PatternDialog::PatternDialog(ConverterWindow* window)
     , document_(window->document())
 {
     setObjectName(QStringLiteral("EditTrameAscii"));
-    setWindowTitle(texts::text("Main.bpEditTrame"));
+    setWindowTitle(texts::windowTitle(texts::text("Main.bpEditTrame")));
     auto* grid = new QGridLayout(this);
     all_ = new QWidget;
     all_->setObjectName(QStringLiteral("pictAllMatrice"));
@@ -99,9 +94,9 @@ PatternDialog::PatternDialog(ConverterWindow* window)
     grid->addWidget(numTabTrame_, 6, 2);
     grid->addWidget(bpForceCalc, 6, 3);
     texts::apply(this, "EditTrameAscii");
-    numTabTrame_->setAccessibleName(both("Jeu de trames prédéfini", "Ready-made set of patterns"));
-    edit_->setAccessibleName(both("Trame en cours d'édition", "Pattern being edited"));
-    all_->setAccessibleName(both("Les seize trames", "The sixteen patterns"));
+    numTabTrame_->setAccessibleName(tr("Ready-made set of patterns"));
+    edit_->setAccessibleName(tr("Pattern being edited"));
+    all_->setAccessibleName(tr("The sixteen patterns"));
 
     connect(bpPrev_, &QPushButton::clicked, this, [this] {
         current_ = std::max(0, current_ - 1);
@@ -227,7 +222,7 @@ bool PatternDialog::eventFilter(QObject* watched, QEvent* event)
 void PatternDialog::readPatterns()
 {
     const QString path = prompts::openName(this, texts::text("EditTrameAscii.bpRead"), QString::fromStdString(document_->param.lastReadPath),
-                                           {both("Modèle trames (*.xml)", "Patterns (*.xml)")});
+                                           {tr("Patterns (*.xml)")});
     if (path.isEmpty())
         return;
     const auto file = readHostFile(path);
@@ -241,7 +236,7 @@ void PatternDialog::readPatterns()
             bytes = QByteArray::fromBase64(xml.mid(from, to - from).trimmed());
     }
     if (bytes.size() < 256) {
-        document_->fail(both("Impossible de lire la trame.", "The patterns could not be read."));
+        document_->fail(tr("The patterns could not be read."));
         return;
     }
     int pos = 0;
@@ -255,7 +250,7 @@ void PatternDialog::readPatterns()
 void PatternDialog::savePatterns()
 {
     const QString path = prompts::saveName(this, texts::text("EditTrameAscii.bpSave"), QString::fromStdString(document_->param.lastSavePath),
-                                           {both("Modèle trames (*.xml)", "Patterns (*.xml)")});
+                                           {tr("Patterns (*.xml)")});
     if (path.isEmpty())
         return;
     QByteArray bytes;
@@ -267,7 +262,7 @@ void PatternDialog::savePatterns()
                            "xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">"
         + bytes.toBase64() + "</base64Binary>";
     if (!writeHostFile(path, std::vector<uint8_t>(xml.begin(), xml.end())))
-        document_->fail(both("Impossible de sauver la trame.", "The patterns could not be saved."));
+        document_->fail(tr("The patterns could not be saved."));
 }
 
 void PatternDialog::makePatterns()
@@ -287,3 +282,5 @@ void PatternDialog::makePatterns()
     showAll();
     document_->touch();
 }
+
+}  // namespace tuxscr

@@ -28,19 +28,9 @@
 #include "prompts.h"
 #include "texts.h"
 
-using namespace tuxscr;
+namespace tuxscr {
 
 namespace {
-
-bool english()
-{
-    return texts::language() == QLatin1String("EN");
-}
-
-QString both(const char* french, const char* englishText)
-{
-    return QString::fromUtf8(english() ? englishText : french);
-}
 
 // A line that shows on any colour: white, with black dashes over it.
 void markLine(QPainter& painter, QPointF from, QPointF to)
@@ -91,8 +81,7 @@ EditTools::EditTools(ConverterWindow* window)
         if (document_->frameCount() != frames_)
             forget();
     });
-    connect(window_, &ConverterWindow::languageChanged, this, &EditTools::retranslate);
-    retranslate();
+    applyTexts();
     setEditing(false);
 }
 
@@ -166,12 +155,12 @@ void EditTools::buildEditTab()
     grid->addWidget(lblPenColor, 1, 2);
     grid->addWidget(drawColor_, 1, 3);
     grid->addWidget(undrawColor_, 1, 4);
-    bpUndo_ = namedButton("bpUndo", QStringLiteral("Undo"));
-    bpRedo_ = namedButton("bpRedo", QStringLiteral("Redo"));
-    auto* bpHorFlip = namedButton("bpHorFlip", QStringLiteral("Hor. Flip"));
-    auto* bpVerFlip = namedButton("bpVerFlip", QStringLiteral("Ver. Flip"));
-    bpLoadWin_ = namedButton("bpLoadWin", QStringLiteral("Load Win"));
-    bpSaveWin_ = namedButton("bpSaveWin", QStringLiteral("Save Win"));
+    bpUndo_ = namedButton("bpUndo", tr("Undo"));
+    bpRedo_ = namedButton("bpRedo", tr("Redo"));
+    auto* bpHorFlip = namedButton("bpHorFlip", tr("Hor. Flip"));
+    auto* bpVerFlip = namedButton("bpVerFlip", tr("Ver. Flip"));
+    bpLoadWin_ = namedButton("bpLoadWin", tr("Load Win"));
+    bpSaveWin_ = namedButton("bpSaveWin", tr("Save Win"));
     auto* buttons = new QHBoxLayout;
     for (QPushButton* button : {bpUndo_, bpRedo_, bpHorFlip, bpVerFlip, bpLoadWin_, bpSaveWin_})
         buttons->addWidget(button);
@@ -228,7 +217,7 @@ void EditTools::buildEditTab()
         renderWindow_ = new QDialog(window_);
         renderWindow_->setObjectName(QStringLiteral("Rendu"));
         renderWindow_->setAttribute(Qt::WA_DeleteOnClose);
-        renderWindow_->setWindowTitle(both("Rendu", "Rendering"));
+        renderWindow_->setWindowTitle(texts::windowTitle(tr("Rendering")));
         auto* box = new QVBoxLayout(renderWindow_);
         renderDoubled_ = namedCheck("chkX2", QStringLiteral("X2"));
         renderPicture_ = namedLabel("Picture");
@@ -244,20 +233,20 @@ void EditTools::buildEditTab()
 void EditTools::buildTilesTab()
 {
     tilesTab_ = new QWidget;
-    tilesTab_->setObjectName(QStringLiteral("tilesTab"));
+    tilesTab_->setObjectName(QStringLiteral("tabTiles"));
     auto* grid = new QGridLayout(tilesTab_);
     grid->setContentsMargins(6, 6, 6, 6);
-    chkTilesGrid_ = namedCheck("chkTilesGrid", QStringLiteral("Grid"));
+    chkTilesGrid_ = namedCheck("chkTilesGrid", tr("Grid"));
     tilesSizeX_ = namedSpin("tilesSizeX", 1, 64, 16);
     tilesSizeY_ = namedSpin("tilesSizeY", 1, 64, 16);
-    auto* label9 = namedLabel("label9", QStringLiteral("TilesSizeX"));
-    auto* label10 = namedLabel("label10", QStringLiteral("TilesSizeY"));
+    auto* label9 = namedLabel("label9", tr("Tiles' width"));
+    auto* label10 = namedLabel("label10", tr("Tiles' height"));
     label9->setBuddy(tilesSizeX_);
     label10->setBuddy(tilesSizeY_);
-    auto* bpSaveTiles = namedButton("bpSaveTiles", QStringLiteral("Save as Tileset"));
-    chkPack_ = namedCheck("chkPack", QStringLiteral("Pack"));
-    rbRows_ = namedRadio("rbRows", QStringLiteral("Rows"));
-    auto* rbCols = namedRadio("rbCols", QStringLiteral("Cols"));
+    auto* bpSaveTiles = namedButton("bpSaveTiles", tr("Save as Tileset"));
+    chkPack_ = namedCheck("chkPack", tr("Pack"));
+    rbRows_ = namedRadio("rbRows", tr("Rows"));
+    auto* rbCols = namedRadio("rbCols", tr("Cols"));
     rbRows_->setChecked(true);
     grid->addWidget(chkTilesGrid_, 0, 0);
     grid->addWidget(label9, 0, 1);
@@ -276,8 +265,8 @@ void EditTools::buildTilesTab()
     txbTailleNop_->setObjectName(QStringLiteral("txbTailleNop"));
     txbStartNop_->setMaximumWidth(50);
     txbTailleNop_->setMaximumWidth(50);
-    auto* label1 = namedLabel("label1", QStringLiteral("start NOP"));
-    auto* label4 = namedLabel("label4", QStringLiteral("nb NOPs"));
+    auto* label1 = namedLabel("label1", tr("Start NOP"));
+    auto* label4 = namedLabel("label4", tr("Number of NOPs"));
     label1->setBuddy(txbStartNop_);
     label4->setBuddy(txbTailleNop_);
     grid->addWidget(chkGrille_, 1, 0);
@@ -287,7 +276,7 @@ void EditTools::buildTilesTab()
     grid->addWidget(txbTailleNop_, 1, 4);
 
     auto* bpCopyImage = namedButton("bpCopyImage");
-    chkAutoCopy_ = namedCheck("chkAutoCopy", QStringLiteral("AllCopy"));
+    chkAutoCopy_ = namedCheck("chkAutoCopy", tr("AllCopy"));
     grid->addWidget(bpCopyImage, 2, 0, 1, 2);
     grid->addWidget(chkAutoCopy_, 2, 2, 1, 2);
     grid->setColumnStretch(9, 1);
@@ -319,27 +308,27 @@ void EditTools::buildTilesTab()
     connect(bpCopyImage, &QPushButton::clicked, this, &EditTools::copyToClipboard);
 }
 
-void EditTools::retranslate()
+void EditTools::applyTexts()
 {
     texts::apply(editTab_, "ImageCpc");
     texts::apply(tilesTab_, "ImageCpc");
     QTabWidget* tools = window_->tools();
-    tools->setTabText(tools->indexOf(editTab_), both("Édition", "Edit"));
-    tools->setTabText(tools->indexOf(tilesTab_), both("Tuiles et grilles", "Tiles and Grids"));
-    rbDraw_->setText(both("Crayon", "Pencil"));
-    rbZoom_->setText(both("Loupe", "Magnifier"));
-    rbCopy_->setText(both("Copie de bloc", "Block Copy"));
-    rbPick_->setText(both("Pipette", "Pick Colour"));
-    rbFill_->setText(both("Remplir", "Fill"));
-    chkGrille_->setText(both("Afficher grille verticale", "Show vertical grid"));
-    tilesTab_->findChild<QLabel*>(QStringLiteral("label1"))->setText(both("NOP de début", "Start NOP"));
-    tilesTab_->findChild<QLabel*>(QStringLiteral("label4"))->setText(both("Nb de NOPs", "Number of NOPs"));
-    tilesTab_->findChild<QLabel*>(QStringLiteral("label9"))->setText(both("Largeur des tuiles", "Tiles' width"));
-    tilesTab_->findChild<QLabel*>(QStringLiteral("label10"))->setText(both("Hauteur des tuiles", "Tiles' height"));
-    hScroll_->setAccessibleName(both("Début de l'image agrandie, en X", "Start of the enlarged picture, X"));
-    vScroll_->setAccessibleName(both("Début de l'image agrandie, en Y", "Start of the enlarged picture, Y"));
-    tilesSizeX_->setAccessibleName(QStringLiteral("TilesSizeX"));
-    tilesSizeY_->setAccessibleName(QStringLiteral("TilesSizeY"));
+    tools->setTabText(tools->indexOf(editTab_), tr("Edit"));
+    tools->setTabText(tools->indexOf(tilesTab_), tr("Tiles and Grids"));
+    rbDraw_->setText(tr("Pencil"));
+    rbZoom_->setText(tr("Magnifier"));
+    rbCopy_->setText(tr("Block Copy"));
+    rbPick_->setText(tr("Pick Colour"));
+    rbFill_->setText(tr("Fill"));
+    chkGrille_->setText(tr("Show vertical grid"));
+    tilesTab_->findChild<QLabel*>(QStringLiteral("label1"))->setText(tr("Start NOP"));
+    tilesTab_->findChild<QLabel*>(QStringLiteral("label4"))->setText(tr("Number of NOPs"));
+    tilesTab_->findChild<QLabel*>(QStringLiteral("label9"))->setText(tr("Tiles' width"));
+    tilesTab_->findChild<QLabel*>(QStringLiteral("label10"))->setText(tr("Tiles' height"));
+    hScroll_->setAccessibleName(tr("Start of the enlarged picture, X"));
+    vScroll_->setAccessibleName(tr("Start of the enlarged picture, Y"));
+    tilesSizeX_->setAccessibleName(tr("Tiles' width"));
+    tilesSizeY_->setAccessibleName(tr("Tiles' height"));
     showPens();
 }
 
@@ -409,10 +398,8 @@ void EditTools::showPens()
     const struct {
         QLabel* label;
         int pen;
-        const char* french;
-        const char* englishText;
-    } shown[2] = {{drawColor_, drawPen_ % count, "Bouton gauche : encre ", "Left button: pen "},
-                  {undrawColor_, undrawPen_ % count, "Bouton droit : encre ", "Right button: pen "}};
+        QString tip;
+    } shown[2] = {{drawColor_, drawPen_ % count, tr("Left button: pen %1")}, {undrawColor_, undrawPen_ % count, tr("Right button: pen %1")}};
     for (const auto& one : shown) {
         const QColor colour = toQColor(screen.rgb(screen.palette[static_cast<size_t>(one.pen)]));
         QPalette look = one.label->palette();
@@ -421,7 +408,7 @@ void EditTools::showPens()
         look.setColor(QPalette::WindowText, readable(inkOn(colour), colour));
         one.label->setPalette(look);
         one.label->setText(QString::number(one.pen));
-        one.label->setToolTip(both(one.french, one.englishText) + QString::number(one.pen));
+        one.label->setToolTip(one.tip.arg(one.pen));
         one.label->setAccessibleName(one.label->toolTip());
     }
 }
@@ -876,9 +863,9 @@ void EditTools::saveBlock()
         return;
     using namespace asmgen;
     int chosen = 0;
-    const QString path = prompts::saveName(window_, QStringLiteral("Save Win"), QString::fromStdString(document_->param.lastSavePath),
-                                           {QStringLiteral("OCP window (*.win)"), QStringLiteral("Raw assembler data (*.asm)"),
-                                            QStringLiteral("Raw assembler data in column order (*.asm)")},
+    const QString path = prompts::saveName(window_, tr("Save Win"), QString::fromStdString(document_->param.lastSavePath),
+                                           {tr("OCP window (*.win)"), tr("Raw assembler data (*.asm)"),
+                                            tr("Raw assembler data in column order (*.asm)")},
                                            &chosen);
     if (path.isEmpty())
         return;
@@ -902,13 +889,13 @@ void EditTools::saveBlock()
         written = writeHostText(path, sw.text());
     }
     if (!written)
-        document_->fail(both("Impossible d'écrire ", "Cannot write ") + path);
+        document_->fail(tr("Cannot write %1").arg(path));
 }
 
 void EditTools::loadBlock()
 {
-    const QString path = prompts::openName(window_, QStringLiteral("Load Win"), QString::fromStdString(document_->param.lastReadPath),
-                                           {QStringLiteral("OCP window (*.win)")});
+    const QString path = prompts::openName(window_, tr("Load Win"), QString::fromStdString(document_->param.lastReadPath),
+                                           {tr("OCP window (*.win)")});
     if (path.isEmpty())
         return;
     const auto file = readHostFile(path);
@@ -946,12 +933,12 @@ void EditTools::loadBlock()
 void EditTools::saveTileset()
 {
     using namespace asmgen;
-    const QString path = prompts::saveName(window_, QStringLiteral("Save as Tileset"), QString::fromStdString(document_->param.lastSavePath),
-                                           {QStringLiteral("Bitmapfont (*.asm)")});
+    const QString path = prompts::saveName(window_, tr("Save as Tileset"), QString::fromStdString(document_->param.lastSavePath),
+                                           {tr("Bitmapfont (*.asm)")});
     if (path.isEmpty())
         return;
     AsmLabels labels;
-    if (!window_->askLabels(QStringLiteral("Bitmap tiles"), QFileInfo(path).completeBaseName(), labels))
+    if (!window_->askLabels(tr("Bitmap tiles"), QFileInfo(path).completeBaseName(), labels))
         return;
     const Screen& screen = document_->screen;
     const Picture& picture = document_->picture();
@@ -993,13 +980,15 @@ void EditTools::saveTileset()
     if (document_->param.withPalette)
         GenerePalette(sw, document_->param, false, false, Text(labels.palette));
     if (!writeHostText(path, sw.text())) {
-        document_->fail(both("Impossible d'écrire ", "Cannot write ") + path);
+        document_->fail(tr("Cannot write %1").arg(path));
         return;
     }
-    document_->say(both("Sauvegarde tileset assembleur ok.", "Tileset saved as a source."));
+    document_->say(tr("Tileset saved as a source."));
 }
 
 void EditTools::copyToClipboard()
 {
     QApplication::clipboard()->setImage(document_->shown());
 }
+
+}  // namespace tuxscr

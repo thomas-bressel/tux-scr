@@ -18,7 +18,7 @@
 #include "prompts.h"
 #include "texts.h"
 
-using namespace tuxscr;
+namespace tuxscr {
 
 InterruptsPanel::InterruptsPanel(Document* document, QWidget* parent)
     : QWidget(parent)
@@ -68,7 +68,7 @@ InterruptsPanel::InterruptsPanel(Document* document, QWidget* parent)
         document_->convert(true);
     });
     connect(export_, &QPushButton::clicked, this, &InterruptsPanel::exportText);
-    retranslate();
+    applyTexts();
     refresh();
 }
 
@@ -77,7 +77,7 @@ bool InterruptsPanel::possible() const
     return document_->screen.plus && document_->screen.mode <= kMode2;
 }
 
-void InterruptsPanel::retranslate()
+void InterruptsPanel::applyTexts()
 {
     texts::apply(this, "Interrupts");
     for (const Row& row : rows_) {
@@ -225,11 +225,7 @@ void InterruptsPanel::refresh()
             row.pens[pen]->setColour(toQColor(screen.rgb(colour)));
             row.pens[pen]->setMark(interrupt.defined[p] ? PenButton::Mark::Dot : PenButton::Mark::None);
             row.pens[pen]->setVisible(pen < maxPen);
-            row.pens[pen]->setAccessibleName(QStringLiteral("%1 %2, %3 %4")
-                                                 .arg(texts::text("Interrupts.lblLine"))
-                                                 .arg(interrupt.line)
-                                                 .arg(texts::language() == QLatin1String("EN") ? QStringLiteral("pen") : QStringLiteral("encre"))
-                                                 .arg(pen));
+            row.pens[pen]->setAccessibleName(tr("Line %1, pen %2").arg(interrupt.line).arg(pen));
         }
     }
     emit marksChanged();
@@ -334,12 +330,12 @@ void InterruptsPanel::penClicked(int row, int pen, bool right)
 
 void InterruptsPanel::exportText()
 {
-    const bool english = texts::language() == QLatin1String("EN");
     const QString path = prompts::saveName(this, texts::text("Interrupts.bpExport"), QString::fromStdString(document_->param.lastSavePath),
-                                           {english ? QStringLiteral("Text (*.txt)") : QStringLiteral("Texte (*.txt)"),
-                                            english ? QStringLiteral("Assembler source (*.asm)") : QStringLiteral("Source assembleur (*.asm)")});
+                                           {tr("Text (*.txt)"), tr("Assembler source (*.asm)")});
     if (path.isEmpty())
         return;
     if (document_->savePaletteInterrupts(path))
         document_->param.lastSavePath = QFileInfo(path).absolutePath().toStdString();
 }
+
+}  // namespace tuxscr

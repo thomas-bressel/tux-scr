@@ -89,9 +89,10 @@ l'autre) ; ce que TuxSCR ajoute.
 - **DirectMemory sans délai** : la routine de ConvImgCpc avance de trois
   octets dans la table des images, qui n'en ont que deux sans délai ; dès la
   deuxième image elle lit n'importe quoi. TuxSCR retire le pas en trop.
-- Les trois méthodes, avec et sans délai, par colonnes et en deux zones, sont
-  jouées sur le CPC de TuxAPE par `tests/tuxape_interrupts` : l'écran final
-  est la dernière image.
+- Les trois méthodes, avec et sans délai, par colonnes et en deux zones, ont
+  été jouées sur le CPC de TuxAPE (par un test qui se servait du cœur de
+  TuxAPE, retiré depuis : un plugin n'en prend rien) : l'écran final était la
+  dernière image.
 
 ## Édition
 

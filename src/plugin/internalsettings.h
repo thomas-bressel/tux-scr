@@ -3,11 +3,14 @@
 #include <QDialog>
 #include <QList>
 
-class ConverterWindow;
-class Document;
 class QRadioButton;
 class QSlider;
 class QSpinBox;
+
+namespace tuxscr {
+
+class ConverterWindow;
+class Document;
 
 // ConvImgCpc's "Paramètres internes": the weights of red, green and blue
 // when two colours are compared, the levels at which a component goes from
@@ -34,5 +37,7 @@ private:
     QSpinBox* numPass_;
     bool filling_ = false;
 
-    void retranslate();
+    void applyTexts();
 };
+
+}  // namespace tuxscr

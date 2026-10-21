@@ -9,12 +9,6 @@
 #include "document.h"
 #include "plugin.h"
 
-class AnimationPanel;
-class EditTools;
-class InternalSettings;
-class InterruptsPanel;
-class PaletteBar;
-class PictureView;
 class QCheckBox;
 class QComboBox;
 class QGroupBox;
@@ -27,6 +21,15 @@ class QSlider;
 class QSpinBox;
 class QTabWidget;
 class QVBoxLayout;
+
+namespace tuxscr {
+
+class AnimationPanel;
+class EditTools;
+class InternalSettings;
+class InterruptsPanel;
+class PaletteBar;
+class PictureView;
 
 // TuxSCR's window: ConvImgCpc's two, side by side. On the left what its
 // main window has: files, the CPC's resolution and mode, the size of the
@@ -54,7 +57,6 @@ public:
     void openFile(const QString& path);
     // Asks for a file to save, and saves the picture in the format chosen.
     void save();
-    void setLanguage(const QString& language);
 
     // What a pen of the palette does when clicked, for those who take it
     // over (the picture's editor); null gives it back.
@@ -82,9 +84,6 @@ public:
     bool askLabels(const QString& kind, const QString& name, tuxscr::AsmLabels& labels);
     // One more kind of file "Save" offers, with what writes it.
     void addSaveFormat(const QString& filter, std::function<bool(const QString&)> save) { extraFormats_.append({filter, std::move(save)}); }
-
-signals:
-    void languageChanged();
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -190,7 +189,7 @@ private:
 
     QWidget* buildSettings();
     QWidget* buildPicture();
-    void retranslate();
+    void applyTexts();
     void fromDocument();
     void interfaceChange();
     void updateVisibility();
@@ -207,3 +206,5 @@ private:
     void resetColours(bool all);
     QString settingsFile() const;
 };
+
+}  // namespace tuxscr

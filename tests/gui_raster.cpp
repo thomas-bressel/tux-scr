@@ -28,6 +28,7 @@
 #include <QTimer>
 
 #include "check.h"
+#include "french.h"
 #include "converterwindow.h"
 #include "formats/screenfile.h"
 #include "gui_looks.h"
@@ -146,7 +147,7 @@ int main(int argc, char* argv[])
     // Which colour: the pens the mode has, in their colours; the band's is
     // chosen.
     whenAsked("SelectColor", [&](QDialog* dialog) {
-        CHECK(dialog->windowTitle() == "Raster Colour");
+        CHECK(dialog->windowTitle() == QString::fromUtf8("TuxSCR – Raster Colour"));
         CHECK(dialog->findChild<QLabel*>("label1")->text() == "Choose the color that will be rasterized :");
         CHECK_EQ(dialog->findChildren<PenButton*>().size(), 4);
         auto* pen1 = dialog->findChild<PenButton*>("color1");
@@ -163,7 +164,7 @@ int main(int argc, char* argv[])
     CHECK(table && table->isVisible() && table->isWindow());
     if (!table)
         return checkSummary("gui_raster");
-    CHECK(table->windowTitle() == "Raster+");
+    CHECK(table->windowTitle() == QString::fromUtf8("TuxSCR – Raster+"));
     CHECK_EQ(table->rastered(), 0xFF00FF);
     // Clicked again, it is the same window, and nothing is asked.
     open->click();
@@ -522,14 +523,29 @@ int main(int argc, char* argv[])
     bpImportKit->click();
     CHECK(told.isEmpty() && raster.line == saved.line);
 
-    // In French, as the main window is; and back.
-    window.setLanguage("FR");
-    CHECK(table->windowTitle() == "Rasters Plus");
-    CHECK(bpLoad->text() == "Lire rasters" && bpUndo->text() == "Annuler" && table->findChild<QLabel*>("label1")->text() == QString::fromUtf8("De la ligne :"));
-    CHECK(lblLine->text() == "ligne 50");
-    if (!prefix.isEmpty())
-        CHECK(saveInBothLooks(table, prefix + "raster_table_fr"));
-    window.setLanguage("EN");
+    // In French, in a window made while TuxSCR's translation is installed.
+    {
+        French french;
+        CHECK(french.loaded());
+        ConverterWindow other(nullptr);
+        installSplitTools(&other);
+        other.show();
+        other.findChild<QCheckBox*>("modePlus")->click();
+        other.findChild<QPushButton*>("bpOverscan")->click();
+        whenAsked("SelectColor", [](QDialog* dialog) { dialog->reject(); });
+        other.findChild<QPushButton*>("bpRasterPlus")->click();
+        auto* otherTable = other.findChild<RasterTable*>("RasterTablePlus");
+        CHECK(otherTable != nullptr);
+        if (otherTable) {
+            CHECK(otherTable->windowTitle() == "TuxSCR – Rasters Plus");
+            CHECK(otherTable->findChild<QPushButton*>("bpLoad")->text() == "Lire rasters" && otherTable->findChild<QPushButton*>("bpUndo")->text() == "Annuler");
+            CHECK(otherTable->findChild<QLabel*>("label1")->text() == QString::fromUtf8("De la ligne :"));
+            if (!prefix.isEmpty())
+                CHECK(saveInBothLooks(otherTable, prefix + "raster_table_fr"));
+            otherTable->close();
+        }
+    }
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     CHECK(bpLoad->text() == "Load rasters" && lblLine->text() == "line 50");
 
     // Closed, the table is gone. Opened again with no colour chosen, the

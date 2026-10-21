@@ -7,11 +7,8 @@
 #include <QPoint>
 #include <QPointer>
 
-#include "engine/picture.h"
+#include "convert/picture.h"
 
-class ConverterWindow;
-class Document;
-class PictureView;
 class QCheckBox;
 class QComboBox;
 class QDialog;
@@ -21,6 +18,12 @@ class QPushButton;
 class QRadioButton;
 class QScrollBar;
 class QSpinBox;
+
+namespace tuxscr {
+
+class ConverterWindow;
+class Document;
+class PictureView;
 
 // The picture's editor (ConvImgCpc's "Editer image", its Edition.cs): a
 // pencil, a magnifying glass, the copy of a block, a pen picker and a
@@ -118,7 +121,7 @@ private:
 
     void buildEditTab();
     void buildTilesTab();
-    void retranslate();
+    void applyTexts();
     void setEditing(bool on);
     void setTool(Tool tool);
     void mouse(QPoint at, Qt::MouseButtons buttons);
@@ -146,3 +149,5 @@ private:
     std::vector<uint8_t> blockBytes(bool columns) const;
     int penCount(int y) const;
 };
+
+}  // namespace tuxscr

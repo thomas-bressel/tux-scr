@@ -4,6 +4,8 @@
 #include <QMouseEvent>
 #include <QPainter>
 
+namespace tuxscr {
+
 PictureView::PictureView(QWidget* parent)
     : QWidget(parent)
 {
@@ -166,3 +168,5 @@ void PictureView::keyPressEvent(QKeyEvent* event)
         QWidget::keyPressEvent(event);
     }
 }
+
+}  // namespace tuxscr

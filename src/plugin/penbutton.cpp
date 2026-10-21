@@ -7,6 +7,8 @@
 
 #include "contrast.h"
 
+namespace tuxscr {
+
 PenButton::PenButton(int pen, QWidget* parent)
     : QAbstractButton(parent)
     , pen_(pen)
@@ -102,3 +104,5 @@ void PenButton::paintEvent(QPaintEvent*)
         style()->drawPrimitive(QStyle::PE_FrameFocusRect, &option, &painter, this);
     }
 }
+
+}  // namespace tuxscr

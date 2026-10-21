@@ -12,7 +12,7 @@
 #include "converterwindow.h"
 #include "texts.h"
 
-using namespace tuxscr;
+namespace tuxscr {
 
 InternalSettings::InternalSettings(ConverterWindow* window)
     : QDialog(window)
@@ -61,7 +61,7 @@ InternalSettings::InternalSettings(ConverterWindow* window)
     group("groupBox3", {{"label8", "V1", &param.cstV1, 511}, {"label9", "V2", &param.cstV2, 511}, {"label10", "V3", &param.cstV3, 511}, {"label11", "V4", &param.cstV4, 511}});
     group("groupBox4", {{"label12", "B1", &param.cstB1, 511}, {"label13", "B2", &param.cstB2, 511}, {"label14", "B3", &param.cstB3, 511}, {"label15", "B4", &param.cstB4, 511}});
 
-    auto* kmeans = new QGroupBox(QStringLiteral("KMeans"));
+    auto* kmeans = new QGroupBox(tr("KMeans"));
     kmeans->setObjectName(QStringLiteral("groupBox5"));
     auto* grid = new QGridLayout(kmeans);
     const char* const names[3] = {"rbDistanceSup", "rbDistanceEuclide", "rbDistanceManhattan"};
@@ -99,21 +99,20 @@ InternalSettings::InternalSettings(ConverterWindow* window)
         document_->param.kMeansPass = value;
         document_->convert(false);
     });
-    connect(window, &ConverterWindow::languageChanged, this, &InternalSettings::retranslate);
-    retranslate();
+    applyTexts();
     fromDocument();
 }
 
-void InternalSettings::retranslate()
+void InternalSettings::applyTexts()
 {
-    const bool english = texts::language() == QLatin1String("EN");
-    setWindowTitle(texts::text("Main.chkParamInterne"));
+    setWindowTitle(texts::windowTitle(texts::text("Main.chkParamInterne")));
     texts::apply(this, "ParamInterne");
-    findChild<QLabel*>(QStringLiteral("label1"))->setText(QStringLiteral("R"));
-    findChild<QLabel*>(QStringLiteral("label2"))->setText(QStringLiteral("V"));
-    findChild<QLabel*>(QStringLiteral("label3"))->setText(QStringLiteral("B"));
-    findChild<QLabel*>(QStringLiteral("label16"))->setText(english ? QStringLiteral("Colours") : QStringLiteral("Couleurs"));
-    findChild<QLabel*>(QStringLiteral("label17"))->setText(QStringLiteral("Passes"));
+    // Red, green and blue.
+    findChild<QLabel*>(QStringLiteral("label1"))->setText(tr("R"));
+    findChild<QLabel*>(QStringLiteral("label2"))->setText(tr("G"));
+    findChild<QLabel*>(QStringLiteral("label3"))->setText(tr("B"));
+    findChild<QLabel*>(QStringLiteral("label16"))->setText(tr("Colours"));
+    findChild<QLabel*>(QStringLiteral("label17"))->setText(tr("Passes"));
 }
 
 void InternalSettings::fromDocument()
@@ -129,3 +128,5 @@ void InternalSettings::fromDocument()
     numPass_->setValue(param.kMeansPass >= 1 ? param.kMeansPass : 1);
     filling_ = false;
 }
+
+}  // namespace tuxscr

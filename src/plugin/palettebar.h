@@ -2,10 +2,13 @@
 
 #include <QWidget>
 
-class Document;
-class PenButton;
 class QCheckBox;
 class QLabel;
+
+namespace tuxscr {
+
+class Document;
+class PenButton;
 
 // The picture's palette (the top of ConvImgCpc's "Image CPC" window): for
 // each pen the mode has, its colour, a box above that takes it out of the
@@ -19,7 +22,7 @@ public:
 
     // Shows what the document has.
     void refresh();
-    void retranslate();
+    void applyTexts();
 
     PenButton* penButton(int pen) const { return pens_[pen]; }
     QCheckBox* lockBox(int pen) const { return locks_[pen]; }
@@ -37,3 +40,5 @@ private:
     QLabel* disableLabel_ = nullptr;
     QLabel* lockLabel_ = nullptr;
 };
+
+}  // namespace tuxscr

@@ -6,6 +6,8 @@ class QLabel;
 class QSlider;
 class QSpinBox;
 
+namespace tuxscr {
+
 // The window a pen's colour is chosen in (ConvImgCpc's EditColor): one of
 // the CPC's 27, or on a Plus its green, red and blue, each 0 to 15.
 class ColourDialog : public QDialog {
@@ -30,3 +32,5 @@ private:
 
     void showColour();
 };
+
+}  // namespace tuxscr

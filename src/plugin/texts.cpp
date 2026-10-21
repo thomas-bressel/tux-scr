@@ -1,167 +1,114 @@
 #include "texts.h"
 
+#include <cstring>
+
 #include <QAbstractButton>
 #include <QGroupBox>
 #include <QHash>
 #include <QLabel>
 #include <QWidget>
 
+#include "windowtexts.h"
+
+namespace tuxscr::texts {
+
 namespace {
 
-struct WindowText {
-    const char* name;
-    const char* french;
-    const char* english;
-};
-
-#include "strings.inc"
-
 // What TuxSCR adds to ConvImgCpc's windows, and the texts ConvImgCpc has in
-// one language only (those its designer gives its windows).
+// French only (those its designer gives its windows), with an English of
+// TuxSCR's: they go over ConvImgCpc's of the same name.
 const WindowText kOwnTexts[] = {
-    {"Main.chkDiffErr", nullptr, "Diffusion"},
-    {"Main.bpImport", "Import", "Import"},
-    {"Main.bpStandard", "Standard", "Standard"},
-    {"Main.bpOverscan", "Overscan", "Fullscreen"},
-    {"Main.label3", "Mode", "Mode"},
-    {"Main.label4", "Type", "Type"},
-    {"Main.label7", "Position :", "Position:"},
-    {"Main.radioFit", "Fit", "Fit"},
-    {"Main.radioKeepSmaller", "KeepSmaller", "KeepSmaller"},
-    {"Main.radioKeepLarger", "KeepLarger", "KeepLarger"},
-    {"Main.modePlus", "CPC+", "CPC+"},
-    {"Main.chkInfo", "Informations", "Informations"},
-    {"Main.chkGauss", "KMeans", "KMeans"},
-    {"Main.chk17K", "<=17Ko", "<=17K"},
-    {"Main.chkSwapEgx", "swapEGX", "swapEGX"},
-    {"Main.bpRazAll", "Raz tout", "Reset All"},
-    {"Main.bpEditSplit", "Éditeur de splits", "Split Editor"},
-    {"Main.bpRasterPlus", "Rasters Plus", "Raster+"},
-    {"Main.bpTest", "Matrice", "Matrix"},
-    {"Main.bpTunnel", "Tunnel", "Tunnel"},
-    {"Main.lblPack", "Méthode de compression", "Packing method"},
-    {"Main.bpShow", "Montrer dans TuxAPE", "Show in TuxAPE"},
-    {"Main.bpFromCpc", "Depuis l'écran du CPC", "From the CPC Screen"},
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Diffusion", "Main.chkDiffErr"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Import", "Main.bpImport"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Standard", "Main.bpStandard"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Fullscreen", "Main.bpOverscan"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Mode", "Main.label3"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Type", "Main.label4"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Position:", "Main.label7"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Fit", "Main.radioFit"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "KeepSmaller", "Main.radioKeepSmaller"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "KeepLarger", "Main.radioKeepLarger"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "CPC+", "Main.modePlus"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Informations", "Main.chkInfo"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "KMeans", "Main.chkGauss"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "<=17K", "Main.chk17K"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "swapEGX", "Main.chkSwapEgx"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Reset All", "Main.bpRazAll"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Split Editor", "Main.bpEditSplit"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Raster+", "Main.bpRasterPlus"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Matrix", "Main.bpTest"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Tunnel", "Main.bpTunnel"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Packing method", "Main.lblPack"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "Show in TuxAPE", "Main.bpShow"),
+    QT_TRANSLATE_NOOP3("tuxscr::Main", "From the CPC Screen", "Main.bpFromCpc"),
     // Palette interrupts.
-    {"Interrupts.title", "Interruptions de palette (CPC+)", "Palette interrupts (CPC+)"},
-    {"Interrupts.chkInterrupts", "Ajouter des interruptions de palette", "Add Palette Interrupt"},
-    {"Interrupts.bpAdd", "Ajouter", "Add"},
-    {"Interrupts.bpRemove", "Supprimer", "Remove"},
-    {"Interrupts.bpAuto", "Auto", "Auto"},
-    {"Interrupts.bpApply", "Appliquer à l'écran", "Apply to Screen"},
-    {"Interrupts.bpExport", "Exporter en texte...", "Export as Text..."},
-    {"Interrupts.lblLine", "Ligne", "Line"},
-    {"Interrupts.picture", "Image", "Picture"},
-    {"Interrupts.none", "Aucune interruption : « Ajouter » en place une.", "No interrupt: \"Add\" puts one."},
-    {"Interrupts.tipLine",
-     "La ligne de l'image à partir de laquelle les encres prennent ces couleurs. Un trait la montre sur l'image.",
-     "The line of the picture from which the pens take these colours. A mark shows it on the picture."},
-    {"Interrupts.tipPen",
-     "Clic : choisir la couleur de l'encre à partir de cette ligne ; ce que l'encre dessine prend cette couleur. "
-     "Clic droit ou Suppr : reprendre celle du dessus.",
-     "Click: choose the pen's colour from this line on; what the pen draws takes that colour. "
-     "Right click or Delete: take the one above again."},
-    {"Interrupts.tipAuto",
-     "Cherche dans l'image les meilleures couleurs pour les lignes de cette interruption, et convertit ces lignes avec elles. "
-     "Relâché : ces couleurs sont retirées, les lignes sont de nouveau converties avec la palette du dessus.",
-     "Searches the picture for the best colours for the lines of this interrupt, and converts those lines with them. "
-     "Released: those colours are taken away, the lines are converted with the palette of above again."},
-    {"Interrupts.onlyPlus", "Les interruptions de palette demandent un CPC+ et un des modes 0, 1 ou 2.",
-     "Palette interrupts need a CPC+ and one of the modes 0, 1 or 2."},
-    {"Interrupts.exported", "Interruptions de palette exportées : ", "Palette interrupts exported: "},
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Palette interrupts (CPC+)", "Interrupts.title"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Add Palette Interrupt", "Interrupts.chkInterrupts"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Add", "Interrupts.bpAdd"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Remove", "Interrupts.bpRemove"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Auto", "Interrupts.bpAuto"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Apply to Screen", "Interrupts.bpApply"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Export as Text...", "Interrupts.bpExport"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Line", "Interrupts.lblLine"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Picture", "Interrupts.picture"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "No interrupt: \"Add\" puts one.", "Interrupts.none"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "The line of the picture from which the pens take these colours. A mark shows it on the picture.",
+                       "Interrupts.tipLine"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Click: choose the pen's colour from this line on; what the pen draws takes that colour. Right click or Delete: take the one above again.",
+                       "Interrupts.tipPen"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Searches the picture for the best colours for the lines of this interrupt, and converts those lines with them. Released: those colours are taken away, the lines are converted with the palette of above again.",
+                       "Interrupts.tipAuto"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Palette interrupts need a CPC+ and one of the modes 0, 1 or 2.",
+                       "Interrupts.onlyPlus"),
+    QT_TRANSLATE_NOOP3("tuxscr::Interrupts", "Palette interrupts exported: ", "Interrupts.exported"),
 };
 
-QString g_language = QStringLiteral("FR");
-
-struct AddedText {
-    QByteArray french;
-    QByteArray english;
-    bool hasFrench = false;
-    bool hasEnglish = false;
-};
-QHash<QString, AddedText>& added()
+QHash<QString, const WindowText*>& table()
 {
-    static QHash<QString, AddedText> texts;
-    return texts;
-}
-
-const QHash<QString, const WindowText*>& table()
-{
-    static const QHash<QString, const WindowText*> names = [] {
+    static QHash<QString, const WindowText*> names = [] {
         QHash<QString, const WindowText*> made;
         for (const WindowText& text : kWindowTexts)
             made.insert(QString::fromLatin1(text.name), &text);
-        // TuxSCR's own go over ConvImgCpc's.
-        for (const WindowText& text : kOwnTexts) {
-            const auto there = made.constFind(QString::fromLatin1(text.name));
-            if (there == made.constEnd() || (text.french && text.english))
-                made.insert(QString::fromLatin1(text.name), &text);
-        }
+        for (const WindowText& text : kOwnTexts)
+            made.insert(QString::fromLatin1(text.name), &text);
         return made;
     }();
     return names;
 }
 
+// The context a text is translated in: its window's, "tuxscr::Main" for
+// "Main.bpLoad", as its QT_TRANSLATE_NOOP3 says.
+QByteArray contextOf(const char* name)
+{
+    const char* dot = std::strchr(name, '.');
+    return QByteArrayLiteral("tuxscr::") + QByteArray(name, dot ? static_cast<qsizetype>(dot - name) : -1);
+}
+
 }  // namespace
 
-namespace texts {
-
-void setLanguage(const QString& language)
+void add(std::span<const WindowText> more)
 {
-    g_language = language.compare(QLatin1String("EN"), Qt::CaseInsensitive) == 0 ? QStringLiteral("EN") : QStringLiteral("FR");
-}
-
-QString language()
-{
-    return g_language;
-}
-
-void add(const char* name, const char* french, const char* english)
-{
-    AddedText text;
-    if (french) {
-        text.french = french;
-        text.hasFrench = true;
-    }
-    if (english) {
-        text.english = english;
-        text.hasEnglish = true;
-    }
-    added().insert(QString::fromLatin1(name), text);
+    for (const WindowText& text : more)
+        table().insert(QString::fromLatin1(text.name), &text);
 }
 
 QString text(const char* name)
 {
-    const QString key = QString::fromLatin1(name);
-    if (const auto more = added().constFind(key); more != added().constEnd()) {
-        const bool wantEnglish = g_language == QLatin1String("EN");
-        if (wantEnglish ? more->hasEnglish : more->hasFrench)
-            return QString::fromUtf8(wantEnglish ? more->english : more->french);
-        if (more->hasEnglish || more->hasFrench)
-            return QString::fromUtf8(more->hasEnglish ? more->english : more->french);
-    }
-    const WindowText* found = table().value(key);
-    const auto pick = [](const WindowText* entry) -> const char* {
-        if (!entry)
-            return nullptr;
-        const char* wanted = g_language == QLatin1String("EN") ? entry->english : entry->french;
-        return wanted ? wanted : (entry->english ? entry->english : entry->french);
-    };
-    const char* picked = pick(found);
-    if (!picked) {
-        // One of ConvImgCpc's that TuxSCR's table has in the other language.
-        for (const WindowText& own : kOwnTexts)
-            if (key == QLatin1String(own.name) && pick(&own))
-                return QString::fromUtf8(pick(&own));
+    const WindowText* found = table().value(QString::fromLatin1(name));
+    if (!found)
         return {};
-    }
-    return QString::fromUtf8(picked);
+    return QCoreApplication::translate(contextOf(found->name).constData(), found->english, found->name);
 }
 
 QString text(const char* name, const QString& fallback)
 {
     const QString found = text(name);
     return found.isEmpty() ? fallback : found;
+}
+
+QString windowTitle(const QString& title)
+{
+    return QStringLiteral("TuxSCR – ") + title;
 }
 
 void apply(QWidget* root, const char* prefix)
@@ -183,4 +130,4 @@ void apply(QWidget* root, const char* prefix)
     }
 }
 
-}  // namespace texts
+}  // namespace tuxscr::texts

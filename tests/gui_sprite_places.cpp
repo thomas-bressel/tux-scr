@@ -23,6 +23,7 @@
 #include <QTest>
 
 #include "check.h"
+#include "french.h"
 #include "converterwindow.h"
 #include "gui_looks.h"
 #include "pictures.h"
@@ -313,18 +314,31 @@ int main(int argc, char* argv[])
     enable->click();
     CHECK(shown(150, 100) == red);
 
-    // In French.
-    window.setLanguage("FR");
-    CHECK(tools->tabText(tab) == "Affichage sprites hard sur image");
-    CHECK(enable->text() == "Activer" && copyZoom->text() == "Recopier zoom aux autres sprites" && copy->text() == "Copier positions dans presse-papier");
-    CHECK(panel->findChild<QLabel*>("label3")->text() == "N°Sprite" && panel->findChild<QLabel*>("label7")->text() == "Pos X");
-    CHECK(window.settingsPanel()->findChild<QLabel*>("label3")->text() == "Mode");
-    copy->click();
-    CHECK(told.size() == 1 && told.value(0) == "Position des sprites copié(es) dans le presse-papier");
-    told.clear();
-    if (!prefix.isEmpty())
-        CHECK(saveInBothLooks(&window, prefix + "sprites_places_fr"));
-    window.setLanguage("EN");
+    // In French, in a window made while TuxSCR's translation is installed.
+    {
+        French french;
+        CHECK(french.loaded());
+        ConverterWindow other(nullptr);
+        installSpriteTools(&other);
+        other.show();
+        other.findChild<QCheckBox*>("modePlus")->click();
+        auto* otherPanel = other.findChild<SpritePlacesPanel*>("groupBoxPosSprite");
+        CHECK(otherPanel != nullptr);
+        if (otherPanel) {
+            other.tools()->setCurrentIndex(other.tools()->indexOf(otherPanel));
+            CHECK(other.tools()->tabText(other.tools()->indexOf(otherPanel)) == "Affichage sprites hard sur image");
+            CHECK(otherPanel->findChild<QCheckBox*>("chkAfficheSH")->text() == "Activer");
+            CHECK(otherPanel->findChild<QCheckBox*>("chkCopyZoom")->text() == "Recopier zoom aux autres sprites");
+            CHECK(otherPanel->findChild<QPushButton*>("bpCopiePosSprites")->text() == "Copier positions dans presse-papier");
+            CHECK(otherPanel->findChild<QLabel*>("label3")->text() == "N°Sprite" && otherPanel->findChild<QLabel*>("label7")->text() == "Pos X");
+            CHECK(other.settingsPanel()->findChild<QLabel*>("label3")->text() == "Mode");
+            otherPanel->findChild<QPushButton*>("bpCopiePosSprites")->click();
+            CHECK(told.size() == 1 && told.value(0) == "Position des sprites copié(es) dans le presse-papier");
+            told.clear();
+            if (!prefix.isEmpty())
+                CHECK(saveInBothLooks(&other, prefix + "sprites_places_fr"));
+        }
+    }
 
     if (!prefix.isEmpty()) {
         // Several sprites, of several sizes.

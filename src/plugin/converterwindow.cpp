@@ -35,7 +35,7 @@
 #include "edittools.h"
 #include "internalsettings.h"
 #include "patterndialog.h"
-#include "engine/dither.h"
+#include "convert/dither.h"
 #include "formats/paramfile.h"
 #include "interruptspanel.h"
 #include "palettebar.h"
@@ -44,19 +44,9 @@
 #include "prompts.h"
 #include "texts.h"
 
-using namespace tuxscr;
+namespace tuxscr {
 
 namespace {
-
-bool english()
-{
-    return texts::language() == QLatin1String("EN");
-}
-
-QString both(const char* french, const char* englishText)
-{
-    return QString::fromUtf8(english() ? englishText : french);
-}
 
 const char* const kPackNames[] = {"ZX0 V2", "ZX0", "ZX1", "Standard", "ZX0Ovs"};
 const PackMethod kPackMethods[] = {PackMethod::ZX0_V2, PackMethod::ZX0, PackMethod::ZX1, PackMethod::Standard, PackMethod::ZX0Ovs};
@@ -71,12 +61,12 @@ struct SliderNames {
     const char* reset;
 };
 const SliderNames kSliders[6] = {
-    {"lumi", "label8", "Lum.", "bpLumMoins", "bpLumPlus", "bpRazLumi"},
-    {"sat", "label9", "Sat.", "bpSatMoins", "bpSatPlus", "bpRazSat"},
-    {"contrast", "label10", "Ctrst.", "bpCtrstMoins", "bpCtrstPlus", "bpRazContrast"},
-    {"red", "label6", "R", "bpRmoins", "bpRplus", "RazR"},
-    {"green", "label11", "V", "bpVmoins", "bpVplus", "RazV"},
-    {"blue", "label12", "B", "bpBmoins", "bpBplus", "RazB"},
+    {"lumi", "label8", QT_TRANSLATE_NOOP("tuxscr::ConverterWindow", "Lum."), "bpLumMoins", "bpLumPlus", "bpRazLumi"},
+    {"sat", "label9", QT_TRANSLATE_NOOP("tuxscr::ConverterWindow", "Sat."), "bpSatMoins", "bpSatPlus", "bpRazSat"},
+    {"contrast", "label10", QT_TRANSLATE_NOOP("tuxscr::ConverterWindow", "Ctrst."), "bpCtrstMoins", "bpCtrstPlus", "bpRazContrast"},
+    {"red", "label6", QT_TRANSLATE_NOOP("tuxscr::ConverterWindow", "R"), "bpRmoins", "bpRplus", "RazR"},
+    {"green", "label11", QT_TRANSLATE_NOOP("tuxscr::ConverterWindow", "G"), "bpVmoins", "bpVplus", "RazV"},
+    {"blue", "label12", QT_TRANSLATE_NOOP("tuxscr::ConverterWindow", "B"), "bpBmoins", "bpBplus", "RazB"},
 };
 
 }  // namespace
@@ -88,11 +78,10 @@ ConverterWindow::ConverterWindow(tuxape::PluginHost* host, QWidget* parent)
     setObjectName(QStringLiteral("TuxScrWindow"));
     setWindowFlags(windowFlags() | Qt::WindowMinMaxButtonsHint);
     setAcceptDrops(true);
-    texts::setLanguage(QStringLiteral("EN"));
 
     auto* layout = new QHBoxLayout(this);
     auto* settings = new QScrollArea;
-    settings->setObjectName(QStringLiteral("settingsScroll"));
+    settings->setObjectName(QStringLiteral("saSettings"));
     settings->setWidgetResizable(true);
     settings->setFrameShape(QFrame::NoFrame);
     settings->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -109,12 +98,12 @@ ConverterWindow::ConverterWindow(tuxape::PluginHost* host, QWidget* parent)
     connect(&document_, &Document::said, this, &ConverterWindow::info);
     connect(&document_, &Document::failed, this, [this](const QString& text) { prompts::problem(this, text); });
     connect(&document_, &Document::titleChanged, this,
-            [this](const QString& name) { setWindowTitle(QStringLiteral("TuxSCR – Screen Converter - ") + name); });
+            [this](const QString& name) { setWindowTitle(tr("TuxSCR – Screen Converter - %1").arg(name)); });
     connect(&document_, &Document::packing, this, [this](int percent) {
         // Packing takes its time: the mouse says so until it is done.
         if (!QApplication::overrideCursor())
             QApplication::setOverrideCursor(Qt::WaitCursor);
-        lblInfo_->setText(both("Compactage : ", "Packing: ") + QString::number(percent) + QStringLiteral(" %"));
+        lblInfo_->setText(tr("Packing: %1 %").arg(percent));
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         if (percent >= 100)
             QApplication::restoreOverrideCursor();
@@ -122,7 +111,7 @@ ConverterWindow::ConverterWindow(tuxape::PluginHost* host, QWidget* parent)
 
     editTools_ = new EditTools(this);
     animation_ = new AnimationPanel(this);
-    tools_->addTab(animation_, QStringLiteral("Animation"));
+    tools_->addTab(animation_, tr("Animation"));
     connect(bpEditTrame_, &QPushButton::clicked, this, [this] {
         PatternDialog dialog(this);
         dialog.exec();
@@ -141,17 +130,15 @@ ConverterWindow::ConverterWindow(tuxape::PluginHost* host, QWidget* parent)
         internalSettings_->fromDocument();
         internalSettings_->show();
     });
-    setWindowTitle(QStringLiteral("TuxSCR – Screen Converter"));
+    setWindowTitle(tr("TuxSCR – Screen Converter"));
     // The settings of the last time, if TuxAPE keeps them for us.
     const QString kept = settingsFile();
     if (!kept.isEmpty() && QFileInfo::exists(kept)) {
         loading_ = true;
         document_.readParam(kept);
         loading_ = false;
-        texts::setLanguage(QString::fromStdString(document_.param.langue));
     }
-    document_.param.langue = texts::language().toStdString();
-    retranslate();
+    applyTexts();
     fromDocument();
     infoLines_.clear();
     lblInfo_->clear();
@@ -171,10 +158,8 @@ QString ConverterWindow::settingsFile() const
 void ConverterWindow::closeEvent(QCloseEvent* event)
 {
     const QString kept = settingsFile();
-    if (!kept.isEmpty()) {
-        document_.param.langue = texts::language().toStdString();
+    if (!kept.isEmpty())
         writeHostText(kept, paramXml(document_.param, document_.screen));
-    }
     QDialog::closeEvent(event);
 }
 
@@ -239,22 +224,22 @@ QWidget* ConverterWindow::buildSettings()
         // How many pictures the animation is to have.
         QDialog dialog(this);
         dialog.setObjectName(QStringLiteral("CreationImages"));
-        dialog.setWindowTitle(texts::text("Main.bpCreate"));
+        dialog.setWindowTitle(texts::windowTitle(texts::text("Main.bpCreate")));
         auto* form = new QVBoxLayout(&dialog);
-        auto* single = namedRadio("rbSingle", texts::text("CreationImages.rbSingle", QStringLiteral("Image simple")));
-        auto* several = namedRadio("rbMulti", texts::text("CreationImages.label1", QStringLiteral("Animation")));
+        auto* single = namedRadio("rbSingle", texts::text("CreationImages.rbSingle"));
+        auto* several = namedRadio("rbMulti", texts::text("CreationImages.label1"));
         auto* count = namedSpin("nbImages", 2, 255, 2);
         single->setChecked(true);
         count->setEnabled(false);
         connect(several, &QRadioButton::toggled, count, &QWidget::setEnabled);
         auto* row = new QHBoxLayout;
         row->addWidget(several);
-        row->addWidget(new QLabel(texts::text("CreationImages.lblNbImages", QStringLiteral("Nb images"))));
+        row->addWidget(new QLabel(texts::text("CreationImages.lblNbImages")));
         row->addWidget(count);
         form->addWidget(single);
         form->addLayout(row);
         auto* buttons = new QDialogButtonBox;
-        buttons->addButton(texts::text("CreationImages.bpCreer", QStringLiteral("Créer")), QDialogButtonBox::AcceptRole)
+        buttons->addButton(texts::text("CreationImages.bpCreer"), QDialogButtonBox::AcceptRole)
             ->setObjectName(QStringLiteral("bpCreer"));
         buttons->addButton(QDialogButtonBox::Cancel);
         connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
@@ -264,8 +249,7 @@ QWidget* ConverterWindow::buildSettings()
             return;
         const int frames = single->isChecked() ? 1 : count->value();
         document_.setBlankFrames(frames);
-        document_.say(frames == 1 ? texts::text("Main.prg.TxtInfo14")
-                                  : texts::text("Main.prg.TxtInfo15") + QString::number(frames) + QStringLiteral(" images."));
+        document_.say(frames == 1 ? texts::text("Main.prg.TxtInfo14") : tr("Animation creation with %n pictures.", nullptr, frames));
         document_.resetPictures(true);
         document_.convert(false);
     });
@@ -546,10 +530,10 @@ QWidget* ConverterWindow::buildSettings()
     auto* sliderGrid = new QGridLayout;
     for (int i = 0; i < 6; ++i) {
         const SliderNames& names = kSliders[i];
-        auto* label = namedLabel(names.label, QLatin1String(names.text));
+        auto* label = namedLabel(names.label, tr(names.text));
         auto* less = namedButton(names.less, QStringLiteral("-"));
         auto* more = namedButton(names.more, QStringLiteral("+"));
-        auto* reset = namedButton(names.reset, QStringLiteral("Raz"));
+        auto* reset = namedButton(names.reset, tr("Reset"));
         less->setFixedWidth(28);
         more->setFixedWidth(28);
         sliders_[i] = new QSlider(Qt::Horizontal);
@@ -629,23 +613,17 @@ QWidget* ConverterWindow::buildSettings()
     lblVersion_ = namedLabel("lblInfoVersion");
     chkParamInterne_ = namedCheck("chkParamInterne");
     chkInfo_ = namedCheck("chkInfo");
-    auto* bpFr = namedButton("bpFr", QStringLiteral("Français"));
-    auto* bpEn = namedButton("bpEn", QStringLiteral("English"));
     auto* bpTest = namedButton("bpTest");
     foot->addWidget(lblVersion_, 0, 0, 1, 3);
     foot->addWidget(chkParamInterne_, 1, 0);
     foot->addWidget(chkInfo_, 1, 1);
     foot->addWidget(bpTest, 1, 2);
-    foot->addWidget(bpFr, 2, 0);
-    foot->addWidget(bpEn, 2, 1);
     column->addLayout(foot);
     column->addStretch();
     lblVersion_->setText(QStringLiteral("TuxSCR %1 - ConvImgCpc %2").arg(QLatin1String(versionString()), QLatin1String(convImgCpcVersion())));
-    connect(bpFr, &QPushButton::clicked, this, [this] { setLanguage(QStringLiteral("FR")); });
-    connect(bpEn, &QPushButton::clicked, this, [this] { setLanguage(QStringLiteral("EN")); });
     connect(bpTest, &QPushButton::clicked, this, [this] {
         const QString path = prompts::saveName(this, texts::text("Main.bpTest"), QString::fromStdString(document_.param.lastSavePath),
-                                               {both("Sauvegarde matrice assembleur (*.asm)", "Matrix as a source (*.asm)")});
+                                               {tr("Matrix as a source (*.asm)")});
         if (!path.isEmpty() && document_.saveMatrix(path))
             document_.param.lastSavePath = QFileInfo(path).absolutePath().toStdString();
     });
@@ -658,7 +636,7 @@ QWidget* ConverterWindow::buildSettings()
         if (!infoWindow_) {
             infoWindow_ = new QDialog(this);
             infoWindow_->setObjectName(QStringLiteral("Informations"));
-            infoWindow_->setWindowTitle(texts::text("Main.chkInfo"));
+            infoWindow_->setWindowTitle(texts::windowTitle(texts::text("Main.chkInfo")));
             auto* box = new QVBoxLayout(infoWindow_);
             infoText_ = new QPlainTextEdit;
             infoText_->setObjectName(QStringLiteral("listInfo"));
@@ -687,7 +665,7 @@ QWidget* ConverterWindow::buildPicture()
     auto* side = new QVBoxLayout;
     lockAllPal_ = namedCheck("lockAllPal");
     bpCopyPal_ = namedButton("bpCopyPal");
-    bpGenPal_ = namedButton("bpGenPal", QStringLiteral("Gen. palette"));
+    bpGenPal_ = namedButton("bpGenPal", tr("Make Palette"));
     chkX2_ = namedCheck("chkX2", QStringLiteral("X2"));
     side->addWidget(lockAllPal_);
     auto* sideRow = new QHBoxLayout;
@@ -708,7 +686,7 @@ QWidget* ConverterWindow::buildPicture()
     column->addWidget(viewScroll_, 3);
 
     tools_ = new QTabWidget;
-    tools_->setObjectName(QStringLiteral("tools"));
+    tools_->setObjectName(QStringLiteral("twTools"));
     interrupts_ = new InterruptsPanel(&document_);
     tools_->addTab(interrupts_, QString());
     tools_->setMinimumHeight(190);
@@ -760,15 +738,7 @@ void ConverterWindow::setPenHandler(std::function<void(int, bool)> handler)
 
 // ---- Texts ----
 
-void ConverterWindow::setLanguage(const QString& language)
-{
-    texts::setLanguage(language);
-    document_.param.langue = texts::language().toStdString();
-    retranslate();
-    emit languageChanged();
-}
-
-void ConverterWindow::retranslate()
+void ConverterWindow::applyTexts()
 {
     // ConvImgCpc names its controls window by window: "label1" is one thing
     // in its main window and another elsewhere. Each part is given the
@@ -776,23 +746,23 @@ void ConverterWindow::retranslate()
     texts::apply(settingsPanel_, "Main");
     lockAllPal_->setText(texts::text("ImageCpc.lockAllPal"));
     bpCopyPal_->setText(texts::text("ImageCpc.bpCopyPal"));
-    findChild<QGroupBox*>(QStringLiteral("groupFiles"))->setTitle(both("Fichiers", "Files"));
-    findChild<QGroupBox*>(QStringLiteral("groupBox2"))->setTitle(texts::text("Main.groupBox2", both("Gestion des couleurs", "Colours")));
-    lblTrack_->setText(both("Suivi des lignes", "Lines followed"));
-    bpGenPal_->setText(both("Générer palette", "Make Palette"));
-    methode_->setItemText(0, both("Aucun", "None"));
+    findChild<QGroupBox*>(QStringLiteral("groupFiles"))->setTitle(tr("Files"));
+    findChild<QGroupBox*>(QStringLiteral("groupBox2"))->setTitle(texts::text("Main.groupBox2", tr("Colours")));
+    lblTrack_->setText(tr("Lines followed"));
+    bpGenPal_->setText(tr("Make Palette"));
+    methode_->setItemText(0, tr("None"));
     tools_->setTabText(tools_->indexOf(interrupts_), texts::text("Interrupts.title"));
-    interrupts_->retranslate();
-    palette_->retranslate();
+    interrupts_->applyTexts();
+    palette_->applyTexts();
     // What a control is, said to those who do not see its label.
     for (int i = 0; i < 6; ++i)
-        sliders_[i]->setAccessibleName(QLatin1String(kSliders[i].text));
-    numPosX_->setAccessibleName(both("Position X", "Position X"));
-    numPosY_->setAccessibleName(both("Position Y", "Position Y"));
-    numSizeX_->setAccessibleName(both("Taille X", "Size X"));
-    numSizeY_->setAccessibleName(both("Taille Y", "Size Y"));
-    pctTrame_->setAccessibleName(both("Pourcentage de tramage", "Dithering, percent"));
-    view_->setAccessibleName(both("Image CPC", "CPC picture"));
+        sliders_[i]->setAccessibleName(tr(kSliders[i].text));
+    numPosX_->setAccessibleName(tr("Position X"));
+    numPosY_->setAccessibleName(tr("Position Y"));
+    numSizeX_->setAccessibleName(tr("Size X"));
+    numSizeY_->setAccessibleName(tr("Size Y"));
+    pctTrame_->setAccessibleName(tr("Dithering, percent"));
+    view_->setAccessibleName(tr("CPC picture"));
     fillModes();
     // The settings are as wide as their texts in the language, with room
     // for the bar that scrolls them.
@@ -1049,7 +1019,7 @@ void ConverterWindow::copyPalette()
             text += QLatin1Char(',');
     }
     QApplication::clipboard()->setText(text);
-    document_.say(both("Palette copiée dans le presse-papier", "Palette copied to the clipboard"));
+    document_.say(tr("Palette copied to the clipboard"));
 }
 
 // ---- The source moved and sized with the mouse ----
@@ -1162,12 +1132,12 @@ bool ConverterWindow::askLabels(const QString& kind, const QString& name, AsmLab
     // ConvImgCpc's SaveMedia: the labels a source gives what it holds.
     QDialog dialog(this);
     dialog.setObjectName(QStringLiteral("SaveMedia"));
-    dialog.setWindowTitle(QStringLiteral("Save %1 (asm format)").arg(kind));
+    dialog.setWindowTitle(texts::windowTitle(tr("Save %1 (asm format)").arg(kind)));
     auto* form = new QGridLayout(&dialog);
-    auto* chkMedia = namedCheck("chkLabelMedia", kind + QStringLiteral(" Label"));
+    auto* chkMedia = namedCheck("chkLabelMedia", tr("%1 Label").arg(kind));
     auto* txbMedia = new QLineEdit(name);
     txbMedia->setObjectName(QStringLiteral("txbLabelMedia"));
-    auto* chkPalette = namedCheck("chkLabelPalette", kind + QStringLiteral(" Palette Label"));
+    auto* chkPalette = namedCheck("chkLabelPalette", tr("%1 Palette Label").arg(kind));
     auto* txbPalette = new QLineEdit(QStringLiteral("Palette") + name);
     txbPalette->setObjectName(QStringLiteral("txbLabelPalette"));
     chkMedia->setChecked(true);
@@ -1209,7 +1179,7 @@ void ConverterWindow::save()
         };
     };
     formats << Format{texts::text("Main.prg.TxtInfo20") + QStringLiteral(" (*.scr)"), [this](const QString& path) { return document_.saveScreen(path, false); }};
-    formats << Format{QStringLiteral("Bitmap (*.png)"), [this](const QString& path) { return document_.savePng(path); }};
+    formats << Format{tr("Bitmap (*.png)"), [this](const QString& path) { return document_.savePng(path); }};
     formats << Format{texts::text("Main.prg.TxtInfo21") + QStringLiteral(" (*.asm)"),
                       asmSaver("Soft sprite", [this](const QString& path, const AsmLabels& labels) { return document_.saveSprite(path, labels, false); })};
     formats << Format{texts::text("Main.prg.TxtInfo22") + QStringLiteral(" (*.asm)"),
@@ -1230,9 +1200,9 @@ void ConverterWindow::save()
         formats << Format{texts::text("Main.prg.TxtInfo27") + QStringLiteral(" (*.kit)"), [this](const QString& path) { return document_.saveKit(path, true); }};
     if (screen.mode == kModeEgx1 || screen.mode == kModeEgx2)
         formats << Format{texts::text("Main.prg.TxtInfo28") + QStringLiteral(" (*.scr)"), [this](const QString& path) { return document_.saveEgx(path); }};
-    formats << Format{QStringLiteral("Bump (*.asm)"), [this](const QString& path) { return document_.saveBump(path); }};
-    formats << Format{QStringLiteral("DiffAnim (*.asm)"), [this](const QString& path) { return document_.saveDiffImages(path); }};
-    formats << Format{QStringLiteral("Tunnel (*.asm)"), [this](const QString& path) { return document_.saveTunnel(path); }};
+    formats << Format{tr("Bump (*.asm)"), [this](const QString& path) { return document_.saveBump(path); }};
+    formats << Format{tr("DiffAnim (*.asm)"), [this](const QString& path) { return document_.saveDiffImages(path); }};
+    formats << Format{tr("Tunnel (*.asm)"), [this](const QString& path) { return document_.saveTunnel(path); }};
     if (screen.interruptsActive())
         formats << Format{texts::text("Interrupts.title") + QStringLiteral(" (*.txt)"), [this](const QString& path) { return document_.savePaletteInterrupts(path); }};
     for (const SaveFormat& extra : extraFormats_)
@@ -1262,11 +1232,11 @@ void ConverterWindow::showInTuxApe()
     const QString folder = host_->dataFolder();
     const QString path = QDir(folder.isEmpty() ? QDir::tempPath() : folder).filePath(QStringLiteral("tuxscr_show.asm"));
     if (!writeHostText(path, program)) {
-        document_.fail(both("Impossible d'écrire ", "Cannot write ") + QDir::toNativeSeparators(path));
+        document_.fail(tr("Cannot write %1").arg(QDir::toNativeSeparators(path)));
         return;
     }
     if (host_->assembleAndRun(path))
-        document_.say(both("Image montrée dans TuxAPE (une touche pour finir).", "Picture shown in TuxAPE (a key ends it)."));
+        document_.say(tr("Picture shown in TuxAPE (a key ends it)."));
 }
 
 void ConverterWindow::fromCpcScreen()
@@ -1311,6 +1281,8 @@ void ConverterWindow::fromCpcScreen()
     drawSprite(sprite, columns, lines, screen, &document_.picture());
     document_.param.lockState.fill(1);
     fromDocument();
-    document_.say(both("Image reprise de l'écran du CPC.", "Picture taken from the CPC's screen."));
+    document_.say(tr("Picture taken from the CPC's screen."));
     document_.touch();
 }
+
+}  // namespace tuxscr

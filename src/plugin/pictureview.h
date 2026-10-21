@@ -6,6 +6,8 @@
 #include <QList>
 #include <QWidget>
 
+namespace tuxscr {
+
 // The CPC's picture on the PC: a pixel of mode 2 is one pixel across and a
 // line two rows, or twice that. What is over the picture (the mark of a
 // palette interrupt's line, grids, the sprites, a rectangle being drawn) is
@@ -69,3 +71,5 @@ private:
 
     QPoint pictureAt(const QMouseEvent* event) const;
 };
+
+}  // namespace tuxscr

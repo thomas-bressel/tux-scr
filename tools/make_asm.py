@@ -7,9 +7,9 @@ ConvImgCpc writes its sources line by line, thousands of them, with the
 picture's figures put in here and there (SaveAsm.cs, GenSplitAsm.cs). The
 lines are not typed again: this turns each C# method into the same C++
 function, text for text. It writes
-    src/formats/asmgen_decl.inc   the functions' declarations
-    src/formats/asmgen.inc        the functions
-which src/formats/asmgen.h and asmgen.cpp include; what the functions are
+    src/engine/formats/asmgen_decl.inc   the functions' declarations
+    src/engine/formats/asmgen.inc        the functions
+which src/engine/formats/asmgen.h and asmgen.cpp include; what the functions are
 written with (Text, AsmText, hex, dec...) is in asmtext.h.
 """
 import os
@@ -322,11 +322,11 @@ def main():
             declarations += "}  // namespace split\n"
             definitions += "}  // namespace split\n\n"
         declarations += "\n"
-    with open(os.path.join(ROOT, "src", "formats", "asmgen_decl.inc"), "w", encoding="utf-8") as file:
+    with open(os.path.join(ROOT, "src", "engine", "formats", "asmgen_decl.inc"), "w", encoding="utf-8") as file:
         file.write(declarations.rstrip("\n") + "\n")
-    with open(os.path.join(ROOT, "src", "formats", "asmgen.inc"), "w", encoding="utf-8") as file:
+    with open(os.path.join(ROOT, "src", "engine", "formats", "asmgen.inc"), "w", encoding="utf-8") as file:
         file.write(definitions.rstrip("\n") + "\n")
-    print("src/formats/asmgen_decl.inc", "src/formats/asmgen.inc")
+    print("src/engine/formats/asmgen_decl.inc", "src/engine/formats/asmgen.inc")
 
 
 if __name__ == "__main__":

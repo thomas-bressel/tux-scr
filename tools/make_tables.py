@@ -4,9 +4,14 @@
     tools/make_tables.py [ConvImgCpc's folder]
 
 Writes, from the C# files of ConvImgCpc/ConvImgCpc:
-    src/engine/patterns.inc   the eight sets of patterns of mode ASC-UT
-    src/formats/codes.inc     the Z80 routines put in the screens it saves
-    src/plugin/strings.inc    the windows' texts, in French and in English
+    src/engine/convert/patterns.inc   the eight sets of patterns of mode ASC-UT
+    src/engine/formats/codes.inc     the Z80 routines put in the screens it saves
+    src/plugin/windowtexts.h          the windows' texts, in English, for Qt's translation
+
+    tools/make_tables.py --french translations/tuxscr_fr.ts
+
+gives the texts of ConvImgCpc's windows that the translation has not yet the
+French ConvImgCpc has for them (after lupdate has put them there).
 
 The tables are copied, not typed again: a byte of a routine that is wrong is
 a screen that does not show.
@@ -17,7 +22,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-SOURCE = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, "ConvImgCpc", "ConvImgCpc")
+SOURCE = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] != "--french" else os.path.join(ROOT, "ConvImgCpc", "ConvImgCpc")
 
 
 def read(name):
@@ -57,7 +62,7 @@ def patterns():
             out += "        {" + ", ".join(rows) + "},\n"
         out += "    },\n"
     out += "};\n"
-    write("src/engine/patterns.inc", out)
+    write("src/engine/convert/patterns.inc", out)
 
 
 def codes():
@@ -74,11 +79,20 @@ def codes():
         out += "\n};\n\n"
     assert [n for n, _ in names] == ["CodeStd", "CodeP0", "CodeP1", "CodeP3", "CodeOv", "CodeOvP", "codeEgx0",
                                     "codeEgx1", "codeDepack", "codeDZX0", "codeDZX0_V2", "codeDZX1"], names
-    write("src/formats/codes.inc", out.rstrip("\n") + "\n")
+    write("src/engine/formats/codes.inc", out.rstrip("\n") + "\n")
     return names
 
 
-def strings():
+def c_string(text):
+    """A C++ string literal of `text`; two question marks would begin a trigraph."""
+    text = text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r")
+    if "??" in text:
+        text = text.replace("?", "\\?")
+    return '"%s"' % text
+
+
+def multilingue():
+    """ConvImgCpc's texts: for each name, in its order, the French and the English."""
     text = read("Multilingue.cs")
     found = {}
     order = []
@@ -87,23 +101,70 @@ def strings():
         if name not in found:
             found[name] = {}
             order.append(name)
-        # Two question marks and a bracket are a trigraph to a C++ compiler.
-        found[name][language] = value.replace("?", "\\?") if "??" in value else value
+        value = re.sub(r"\\(.)", lambda m: {"n": "\n", "r": "\r", "t": "\t"}.get(m.group(1), m.group(1)), value)
+        # A caption ConvImgCpc breaks in two for a narrow button: a line end
+        # of one character, as Qt's translations keep them.
+        found[name][language] = value.replace("\r\n", "\n").replace("\n\r", "\n").replace("\r", "\n")
+    return order, found
+
+
+def context(name):
+    """The context of a window's text for Qt's translation: its window's."""
+    return "tuxscr::" + name.split(".", 1)[0]
+
+
+def strings():
+    order, found = multilingue()
     out = HEADER % "Multilingue.cs"
-    out += "// A text of a window: its name there, then French and English. One that\n"
-    out += "// ConvImgCpc has in one language only is null in the other.\n"
+    out += "#pragma once\n\n#include \"texts.h\"\n\n"
+    out += "// The texts of ConvImgCpc's windows, in English, each marked for Qt's\n"
+    out += "// translation in its window's context, with its name there (\"Main.bpLoad\")\n"
+    out += "// to tell it from another of the same English. Their French is in\n"
+    out += "// translations/tuxscr_fr.ts (make_tables.py --french puts ConvImgCpc's\n"
+    out += "// there). Those ConvImgCpc has in French only are TuxSCR's (texts.cpp),\n"
+    out += "// which gives them an English.\n"
+    out += "namespace tuxscr::texts {\n\n"
     out += "const WindowText kWindowTexts[] = {\n"
+    written = 0
     for name in order:
-        french = found[name].get("FR")
         english = found[name].get("EN")
-        out += '    {"%s", %s, %s},\n' % (name, '"%s"' % french if french is not None else "nullptr",
-                                           '"%s"' % english if english is not None else "nullptr")
-    out += "};\n"
-    write("src/plugin/strings.inc", out)
-    return len(order)
+        if english is None:
+            continue
+        out += "    QT_TRANSLATE_NOOP3(%s, %s, %s),\n" % (c_string(context(name)), c_string(english), c_string(name))
+        written += 1
+    out += "};\n\n}  // namespace tuxscr::texts\n"
+    write("src/plugin/windowtexts.h", out)
+    return written
+
+
+def french(ts_path):
+    """ConvImgCpc's French, as the translation of its texts not yet translated in `ts_path`."""
+    import xml.etree.ElementTree as ET
+    _, found = multilingue()
+    tree = ET.parse(ts_path)
+    given = 0
+    for message in tree.getroot().iter("message"):
+        comment = message.find("comment")
+        translation = message.find("translation")
+        if comment is None or comment.text not in found or "FR" not in found[comment.text]:
+            continue
+        if translation.get("type") != "unfinished" and translation.text:
+            continue
+        translation.text = found[comment.text]["FR"]
+        translation.attrib.pop("type", None)
+        given += 1
+    ET.indent(tree, "    ")
+    with open(ts_path, "wb") as file:
+        file.write(b'<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE TS>\n')
+        tree.write(file, encoding="utf-8", xml_declaration=False)
+        file.write(b"\n")
+    return given
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 2 and sys.argv[1] == "--french":
+        print(french(sys.argv[2]), "texts given ConvImgCpc's French")
+        sys.exit(0)
     patterns()
     print(codes())
     print(strings(), "texts")

@@ -1,6 +1,14 @@
-find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets)
-
 set(CMAKE_AUTOMOC ON)
+
+# Pictures between Qt and the engine: a file's pictures read, and one
+# brought to the size of the CPC's screen. Qt's pictures only, no window:
+# the command-line program reads its pictures with it too.
+add_library(tuxscr_pictures STATIC
+    pictures.cpp
+    pictures.h
+)
+target_include_directories(tuxscr_pictures PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(tuxscr_pictures PUBLIC tuxscr_convert tuxscr_base Qt6::Gui)
 
 # The windows are a library, so that tests can drive them; the plugin itself
 # is no more than what TuxAPE loads and talks to.
@@ -30,19 +38,66 @@ add_library(tuxscr_ui STATIC
     # What the windows work on together.
     document.cpp
     document.h
-    # What they share.
-    penbutton.cpp
-    penbutton.h
-    pictures.cpp
-    pictures.h
-    prompts.cpp
-    prompts.h
+    # What they share: the texts of ConvImgCpc's windows (windowtexts.h is
+    # made by tools/make_tables.py) and TuxSCR's own.
+    windowtexts.h
     texts.cpp
     texts.h
+    penbutton.cpp
+    penbutton.h
+    prompts.cpp
+    prompts.h
     contrast.h
     controls.h
     icons.cpp
     icons.h
+    # The split editor, the Plus's table of rasters and the maker of
+    # palettes: what the converter's window is given of them.
+    splits/splittools.cpp
+    splits/splittools.h
+    splits/spliteditor.cpp
+    splits/spliteditor.h
+    splits/rastertable.cpp
+    splits/rastertable.h
+    splits/palettemaker.cpp
+    splits/palettemaker.h
+    splits/shadecontrols.cpp
+    splits/shadecontrols.h
+    splits/swatch.cpp
+    splits/swatch.h
+    splits/splittexts.cpp
+    splits/splittexts.h
+    # The Plus's hardware sprites: their editor, their capture from the
+    # picture, their places on it.
+    sprites/spritetools.cpp
+    sprites/spritetools.h
+    sprites/spritetexts.cpp
+    sprites/spritetexts.h
+    sprites/spriteeditor.cpp
+    sprites/spriteeditor.h
+    sprites/spritepalettedialog.cpp
+    sprites/spritepalettedialog.h
+    sprites/spritesavedialog.cpp
+    sprites/spritesavedialog.h
+    sprites/spriteicons.cpp
+    sprites/spriteicons.h
+    sprites/spritecapture.cpp
+    sprites/spritecapture.h
+    sprites/spriteplaces.cpp
+    sprites/spriteplaces.h
+    sprites/spriteviews.cpp
+    sprites/spriteviews.h
+    sprites/spritefiles.cpp
+    sprites/spritefiles.h
 )
-target_include_directories(tuxscr_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${TUXAPE_DIR}/sdk)
-target_link_libraries(tuxscr_ui PUBLIC tuxscr_formats tuxscr_engine tuxscr_base Qt6::Widgets)
+target_include_directories(tuxscr_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/splits
+                                            ${CMAKE_CURRENT_SOURCE_DIR}/sprites ${TUXAPE_SDK})
+target_link_libraries(tuxscr_ui PUBLIC tuxscr_pictures tuxscr_splits tuxscr_formats tuxscr_convert tuxscr_base Qt6::Widgets)
+
+# What TuxAPE loads: the plugin's class, and no more. tuxape_add_plugin()
+# names it after the plugin's id.
+add_library(tuxscr MODULE
+    tuxscrplugin.cpp
+    tuxscrplugin.h
+)
+target_link_libraries(tuxscr PRIVATE tuxscr_ui)

@@ -6,13 +6,15 @@
 #include <QObject>
 #include <QString>
 
-#include "engine/convert.h"
-#include "engine/param.h"
-#include "engine/picture.h"
-#include "engine/screen.h"
+#include "convert/convert.h"
+#include "convert/param.h"
+#include "convert/picture.h"
+#include "convert/screen.h"
 #include "formats/animfile.h"
 #include "formats/pack.h"
 #include "formats/screenfile.h"
+
+namespace tuxscr {
 
 // What TuxSCR's windows work on together: the CPC the picture is for, the
 // settings, the pictures read from the PC and what they were converted to.
@@ -153,3 +155,5 @@ private:
     bool write(const QString& path, const std::string& text);
     void syncParam();
 };
+
+}  // namespace tuxscr

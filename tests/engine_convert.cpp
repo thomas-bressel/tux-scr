@@ -5,7 +5,7 @@
 
 #include "formats/paramfile.h"
 #include "check.h"
-#include "engine/convert.h"
+#include "convert/convert.h"
 
 using namespace tuxscr;
 

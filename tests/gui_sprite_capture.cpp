@@ -22,6 +22,7 @@
 #include <QTest>
 
 #include "check.h"
+#include "french.h"
 #include "converterwindow.h"
 #include "gui_looks.h"
 #include "pictures.h"
@@ -160,7 +161,7 @@ int main(int argc, char* argv[])
     if (!box)
         return checkSummary("gui_sprite_capture");
     CHECK(window.mouseOwner() == panel && !window.settingsPanel()->isEnabled());
-    CHECK(box->windowTitle() == "Hard sprites capture");
+    CHECK(box->windowTitle() == QString::fromUtf8("TuxSCR – Hard sprites capture"));
     const auto radio = [&box](const char* name) { return box->findChild<QRadioButton*>(name); };
     auto* preview = box->findChild<SpriteCaptureView*>("pictCapture");
     auto* number = box->findChild<QSpinBox*>("numSprite");
@@ -352,11 +353,7 @@ int main(int argc, char* argv[])
         emit view->mouse(QPoint(32, 32), Qt::NoButton);
         emit view->mouse(QPoint(32, 32), Qt::LeftButton);
         emit view->mouse(QPoint(32, 32), Qt::NoButton);
-        window.setLanguage("FR");
-        CHECK(saveInBothLooks(box, prefix + "sprites_capture_user_fr"));
-        CHECK(box->windowTitle() == "Capture sprites hard" && radio("rbCaptUser")->text() == "Choisir nb sprites" && store->text() == "Capturer");
-        CHECK(capture->text() == "Capture de sprites" && tools->tabText(tab) == "Capture de sprites");
-        window.setLanguage("EN");
+        CHECK(saveInBothLooks(box, prefix + "sprites_capture_user"));
         grid->click();
     }
 
@@ -402,6 +399,35 @@ int main(int argc, char* argv[])
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     CHECK(panel->captureWindow() == nullptr && window.findChild<QDialog*>("Capture") == nullptr);
     CHECK(told.isEmpty());
+
+    // In French, in a window made while TuxSCR's translation is installed.
+    {
+        French french;
+        CHECK(french.loaded());
+        ConverterWindow other(nullptr);
+        installSpriteTools(&other);
+        other.show();
+        other.findChild<QCheckBox*>("modePlus")->click();
+        other.findChild<QComboBox*>("mode")->setCurrentIndex(kModeCaptureSprites);
+        auto* otherPanel = other.findChild<SpriteCapturePanel*>("captureSprites");
+        auto* otherCapture = otherPanel ? otherPanel->findChild<QCheckBox*>("modeCaptureSprites") : nullptr;
+        CHECK(otherPanel && otherCapture);
+        if (otherPanel && otherCapture) {
+            CHECK(otherCapture->text() == "Capture de sprites" && other.tools()->tabText(other.tools()->indexOf(otherPanel)) == "Capture de sprites");
+            otherCapture->click();
+            SpriteCaptureWindow* otherBox = otherPanel->captureWindow();
+            CHECK(otherBox != nullptr);
+            if (otherBox) {
+                CHECK(otherBox->windowTitle() == "TuxSCR – Capture sprites hard");
+                CHECK(otherBox->findChild<QRadioButton*>("rbCaptUser")->text() == "Choisir nb sprites");
+                CHECK(otherBox->findChild<QPushButton*>("bpCapture")->text() == "Capturer");
+                if (!prefix.isEmpty())
+                    CHECK(saveInBothLooks(otherBox, prefix + "sprites_capture_fr"));
+            }
+            otherCapture->click();
+        }
+    }
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 
     // A window that goes while sprites are captured takes it all with it.
     {

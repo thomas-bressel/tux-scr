@@ -3,6 +3,8 @@
 #include <QAbstractButton>
 #include <QColor>
 
+namespace tuxscr {
+
 // A pen of a palette: a square of its colour with its number on it. The
 // number is on a plate of the window's own colours, so that it reads
 // whatever the pen's colour is. A mark in a corner says something more of
@@ -40,3 +42,5 @@ private:
     QColor colour_ = Qt::black;
     Mark mark_ = Mark::None;
 };
+
+}  // namespace tuxscr

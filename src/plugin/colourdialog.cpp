@@ -9,12 +9,12 @@
 #include <QVBoxLayout>
 
 #include "controls.h"
-#include "engine/screen.h"
+#include "convert/screen.h"
 #include "penbutton.h"
 #include "pictures.h"
 #include "texts.h"
 
-using namespace tuxscr;
+namespace tuxscr {
 
 ColourDialog::ColourDialog(int pen, int colour, bool plus, QWidget* parent)
     : QDialog(parent)
@@ -22,11 +22,11 @@ ColourDialog::ColourDialog(int pen, int colour, bool plus, QWidget* parent)
     , plus_(plus)
 {
     setObjectName(QStringLiteral("EditColor"));
-    setWindowTitle(texts::text("EditColor.lblNumColor", QStringLiteral("Couleur ")) + QString::number(pen));
+    setWindowTitle(texts::windowTitle(tr("Colour %1").arg(pen)));
     auto* layout = new QVBoxLayout(this);
 
     auto* top = new QHBoxLayout;
-    top->addWidget(new QLabel(texts::text("EditColor.lblNumColor", QStringLiteral("Couleur ")) + QString::number(pen)));
+    top->addWidget(new QLabel(tr("Colour %1").arg(pen)));
     sample_ = new QLabel;
     sample_->setObjectName(QStringLiteral("selColor"));
     sample_->setFixedSize(64, 32);
@@ -80,9 +80,9 @@ ColourDialog::ColourDialog(int pen, int colour, bool plus, QWidget* parent)
     }
 
     auto* buttons = new QDialogButtonBox;
-    QPushButton* ok = buttons->addButton(texts::text("EditColor.bpValide", QStringLiteral("Valider")), QDialogButtonBox::AcceptRole);
+    QPushButton* ok = buttons->addButton(texts::text("EditColor.bpValide"), QDialogButtonBox::AcceptRole);
     ok->setObjectName(QStringLiteral("bpValide"));
-    QPushButton* cancel = buttons->addButton(texts::text("EditColor.bpAnnule", QStringLiteral("Annuler")), QDialogButtonBox::RejectRole);
+    QPushButton* cancel = buttons->addButton(texts::text("EditColor.bpAnnule"), QDialogButtonBox::RejectRole);
     cancel->setObjectName(QStringLiteral("bpAnnule"));
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -109,3 +109,5 @@ bool ColourDialog::choose(QWidget* parent, int pen, int& colour, bool plus)
     colour = dialog.colour();
     return true;
 }
+
+}  // namespace tuxscr

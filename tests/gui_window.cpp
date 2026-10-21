@@ -24,10 +24,13 @@
 #include "check.h"
 #include "contrast.h"
 #include "converterwindow.h"
+#include "french.h"
 #include "gui_looks.h"
 #include "penbutton.h"
 #include "prompts.h"
 #include "texts.h"
+
+using namespace tuxscr;
 
 namespace {
 
@@ -92,8 +95,7 @@ int main(int argc, char* argv[])
     window.findChild<QCheckBox*>("modePlus")->click();
     CHECK(window.tools()->count() >= 4);
 
-    // English to start with; the texts are ConvImgCpc's.
-    CHECK(texts::language() == "EN");
+    // In English, the language of the sources; the texts are ConvImgCpc's.
     CHECK(window.findChild<QPushButton*>("bpLoad")->text() == "Read");
     CHECK(window.findChild<QPushButton*>("bpSave")->text() == "Save");
     CHECK(window.findChild<QCheckBox*>("withCode")->text() == "Include display code in image");
@@ -101,7 +103,7 @@ int main(int argc, char* argv[])
     CHECK(window.findChild<QCheckBox*>("chkInterrupts")->text() == "Add Palette Interrupt");
     // A name two of ConvImgCpc's windows use has each window's own text.
     CHECK(window.findChild<QWidget*>("resoCPC")->findChild<QLabel*>("label1")->text() == "Nb Columns");
-    CHECK(window.findChild<QWidget*>("tilesTab")->findChild<QLabel*>("label1")->text() == "Start NOP");
+    CHECK(window.findChild<QWidget*>("tabTiles")->findChild<QLabel*>("label1")->text() == "Start NOP");
     checkNames(&window, "English");
     if (!prefix.isEmpty()) {
         for (int tab = 0; tab < window.tools()->count(); ++tab) {
@@ -110,20 +112,29 @@ int main(int argc, char* argv[])
         }
     }
 
-    window.findChild<QPushButton*>("bpFr")->click();
-    CHECK(texts::language() == "FR");
-    CHECK(window.findChild<QPushButton*>("bpLoad")->text() == "Lecture");
-    CHECK(window.findChild<QPushButton*>("bpSave")->text() == "Enregistrement");
-    CHECK(window.findChild<QCheckBox*>("withCode")->text() == "Inclure le code d'affichage dans l'image");
-    CHECK(window.findChild<QGroupBox*>("resoCPC")->title() == QString::fromUtf8("Résolution CPC"));
-    CHECK(window.findChild<QCheckBox*>("chkInterrupts")->text() == "Ajouter des interruptions de palette");
-    CHECK(window.document()->param.langue == "FR");
-    checkNames(&window, "French");
-    if (!prefix.isEmpty()) {
-        window.tools()->setCurrentIndex(0);
-        CHECK(saveInBothLooks(&window, prefix + "tuxscr_fr"));
+    // In French, as TuxAPE starts the plugin when its windows are in French:
+    // a window made while TuxSCR's translation is installed.
+    {
+        French french;
+        CHECK(french.loaded());
+        ConverterWindow other(nullptr);
+        other.show();
+        other.findChild<QCheckBox*>("modePlus")->click();
+        CHECK(other.findChild<QPushButton*>("bpLoad")->text() == "Lecture");
+        CHECK(other.findChild<QPushButton*>("bpSave")->text() == "Enregistrement");
+        CHECK(other.findChild<QCheckBox*>("withCode")->text() == "Inclure le code d'affichage dans l'image");
+        CHECK(other.findChild<QGroupBox*>("resoCPC")->title() == QString::fromUtf8("Résolution CPC"));
+        CHECK(other.findChild<QCheckBox*>("chkInterrupts")->text() == "Ajouter des interruptions de palette");
+        CHECK(other.windowTitle() == QString::fromUtf8("TuxSCR – Convertisseur d'écrans"));
+        // No button of its own changes the language: it is TuxAPE's.
+        CHECK(other.findChild<QPushButton*>("bpFr") == nullptr && other.findChild<QPushButton*>("bpEn") == nullptr);
+        checkNames(&other, "French");
+        if (!prefix.isEmpty()) {
+            other.tools()->setCurrentIndex(0);
+            CHECK(saveInBothLooks(&other, prefix + "tuxscr_fr"));
+        }
     }
-    window.findChild<QPushButton*>("bpEn")->click();
+    // The window made before keeps its English.
     CHECK(window.findChild<QPushButton*>("bpLoad")->text() == "Read");
 
     // What is written on a pen's colour reads on it: black or white, the

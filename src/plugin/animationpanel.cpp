@@ -24,14 +24,9 @@
 #include "prompts.h"
 #include "texts.h"
 
-using namespace tuxscr;
+namespace tuxscr {
 
 namespace {
-
-QString both(const char* french, const char* englishText)
-{
-    return QString::fromUtf8(texts::language() == QLatin1String("EN") ? englishText : french);
-}
 
 // An address as ConvImgCpc's windows take it: "#200", "&200" or "512".
 int address(const QString& text)
@@ -96,7 +91,7 @@ AnimationPanel::AnimationPanel(ConverterWindow* window)
         });
         connect(removes_[i], &QPushButton::clicked, this, [this, i] {
             const int frame = numImage_->value() + i;
-            document_->say(both("Suppression image ", "Frame removed: ") + QString::number(frame));
+            document_->say(tr("Frame removed: %1").arg(frame));
             document_->removeFrame(frame);
         });
     }
@@ -121,7 +116,7 @@ AnimationPanel::AnimationPanel(ConverterWindow* window)
         // One frame in two is taken away, from the last.
         for (int i = document_->frameCount() - 1; i > 0; i -= 2) {
             document_->removeFrame(i);
-            document_->say(both("Suppression image ", "Frame removed: ") + QString::number(i));
+            document_->say(tr("Frame removed: %1").arg(i));
         }
         document_->select(0);
     });
@@ -149,30 +144,29 @@ AnimationPanel::AnimationPanel(ConverterWindow* window)
     });
     connect(bpSaveGif_, &QPushButton::clicked, this, [this] {
         const QString path = prompts::saveName(this, texts::text("Animation.bpSaveGif"), QString::fromStdString(document_->param.lastSavePath),
-                                               {QStringLiteral("Gif anim (*.gif)")});
+                                               {tr("Gif anim (*.gif)")});
         if (!path.isEmpty())
             document_->saveGif(path);
     });
     connect(document_, &Document::framesChanged, this, &AnimationPanel::refresh);
     connect(document_, &Document::changed, this, &AnimationPanel::refresh);
-    connect(window_, &ConverterWindow::languageChanged, this, &AnimationPanel::retranslate);
     bpStop_->setEnabled(false);
-    retranslate();
+    applyTexts();
 }
 
-void AnimationPanel::retranslate()
+void AnimationPanel::applyTexts()
 {
     texts::apply(this, "Animation");
-    lblNumImage_->setText(both("N° image", "Frame"));
-    bpDel1_2_->setText(both("Supprimer 1 image sur 2", "Remove 1 Frame in 2"));
+    lblNumImage_->setText(tr("Frame"));
+    bpDel1_2_->setText(tr("Remove 1 Frame in 2"));
     for (int i = 0; i < 5; ++i) {
-        times_[i]->setAccessibleName(both("Durée de l'image, en millisecondes", "Time the frame stays, in milliseconds"));
+        times_[i]->setAccessibleName(tr("Time the frame stays, in milliseconds"));
         times_[i]->setToolTip(times_[i]->accessibleName());
     }
-    scroll_->setAccessibleName(both("Image courante", "Current frame"));
+    scroll_->setAccessibleName(tr("Current frame"));
     QTabWidget* tools = window_->tools();
     if (tools->indexOf(this) >= 0)
-        tools->setTabText(tools->indexOf(this), QStringLiteral("Animation"));
+        tools->setTabText(tools->indexOf(this), tr("Animation"));
     refresh();
 }
 
@@ -199,7 +193,7 @@ void AnimationPanel::refresh()
     for (int i = 0; i < 5; ++i) {
         const int frame = current + i;
         const bool there = frame < count;
-        pictures_[i]->setToolTip(both("Image ", "Frame ") + QString::number(frame));
+        pictures_[i]->setToolTip(tr("Frame %1").arg(frame));
         pictures_[i]->setAccessibleName(pictures_[i]->toolTip());
         if (there) {
             const QImage picture = source ? document_->source(frame) : document_->shown(frame);
@@ -221,7 +215,7 @@ bool AnimationPanel::saveAnimation(const QString& path)
     const bool ascii = screen.mode >= kModeAscUt;
     QDialog dialog(window_);
     dialog.setObjectName(QStringLiteral("SaveAnim"));
-    dialog.setWindowTitle(texts::text("Main.prg.TxtInfo25", QStringLiteral("Animation")));
+    dialog.setWindowTitle(texts::windowTitle(texts::text("Main.prg.TxtInfo25")));
     auto* grid = new QGridLayout(&dialog);
     auto* label1 = namedLabel("label1");
     auto* txbAdrDeb = new QLineEdit(QStringLiteral("#200"));
@@ -236,8 +230,8 @@ bool AnimationPanel::saveAnimation(const QString& path)
     auto* chkDataBrut = namedCheck("chkDataBrut");
     auto* comboMethode = new QComboBox;
     comboMethode->setObjectName(QStringLiteral("comboMethode"));
-    comboMethode->addItems({QStringLiteral("Standard"), QStringLiteral("DirectMemory"), QStringLiteral("Blocks")});
-    auto* lblMethode = namedLabel("lblMethode", both("Méthode", "Method"));
+    comboMethode->addItems({tr("Standard"), tr("DirectMemory"), tr("Blocks")});
+    auto* lblMethode = namedLabel("lblMethode", tr("Method"));
     lblMethode->setBuddy(comboMethode);
     auto* grpLines = new QGroupBox;
     grpLines->setObjectName(QStringLiteral("grpGenereLigne"));
@@ -279,8 +273,8 @@ bool AnimationPanel::saveAnimation(const QString& path)
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     grid->addWidget(buttons, row, 0, 1, 2);
     texts::apply(&dialog, "SaveAnim");
-    grpLines->setTitle(both("Lignes générées", "Lines written"));
-    grpAscii->setTitle(both("Images des modes ASCII", "Frames of the ASCII modes"));
+    grpLines->setTitle(tr("Lines written"));
+    grpAscii->setTitle(tr("Frames of the ASCII modes"));
 
     // What applies depends on the mode and on what is ticked.
     const auto show = [&] {
@@ -309,13 +303,13 @@ bool AnimationPanel::saveAnimation(const QString& path)
     AnimOptions options;
     options.startAddress = address(txbAdrDeb->text());
     if (options.startAddress <= 0) {
-        document_->fail(both("L'adresse saisie [", "The address typed [") + txbAdrDeb->text() + both("] est erronée.", "] is wrong."));
+        document_->fail(tr("The address typed [%1] is wrong.").arg(txbAdrDeb->text()));
         return false;
     }
     if (chk128Ko->isChecked() && chkMaxMem->isChecked()) {
         options.maxAddress = address(tbxAdrMax->text());
         if (options.maxAddress <= 0) {
-            document_->fail(both("L'adresse saisie [", "The address typed [") + tbxAdrMax->text() + both("] est erronée.", "] is wrong."));
+            document_->fail(tr("The address typed [%1] is wrong.").arg(tbxAdrMax->text()));
             return false;
         }
     }
@@ -331,3 +325,5 @@ bool AnimationPanel::saveAnimation(const QString& path)
     options.rawData = chkDataBrut->isChecked();
     return document_->saveAnimation(path, options);
 }
+
+}  // namespace tuxscr

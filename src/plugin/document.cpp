@@ -11,15 +11,9 @@
 #include "prompts.h"
 #include "texts.h"
 
-using namespace tuxscr;
+namespace tuxscr {
 
 namespace {
-
-// A text ConvImgCpc has in French only, with TuxSCR's English for it.
-QString both(const char* french, const char* english)
-{
-    return QString::fromUtf8(texts::language() == QLatin1String("EN") ? english : french);
-}
 
 QImage blankSource()
 {
@@ -61,7 +55,7 @@ tuxscr::PackProgress Document::progress()
 
 void Document::fail(const QString& text)
 {
-    emit said(both("Erreur - ", "Error - ") + text);
+    emit said(tr("Error - %1").arg(text));
     emit failed(text);
 }
 
@@ -69,7 +63,7 @@ bool Document::write(const QString& path, const std::vector<uint8_t>& bytes)
 {
     if (writeHostFile(path, bytes))
         return true;
-    fail(both("Impossible d'écrire ", "Cannot write ") + QDir::toNativeSeparators(path));
+    fail(tr("Cannot write %1").arg(QDir::toNativeSeparators(path)));
     return false;
 }
 
@@ -81,10 +75,7 @@ bool Document::write(const QString& path, const std::string& text)
 // What the screen is, said to the settings too: files keep them there.
 void Document::syncParam()
 {
-    param.cpcPlus = screen.plus;
-    param.modeVirtuel = screen.mode;
-    param.nbCols = screen.columns;
-    param.nbLignes = screen.lines;
+    screenIntoParam(screen, param);
 }
 
 // ---- Frames ----
@@ -160,10 +151,9 @@ void Document::convert(bool force, bool quiet, int searchInterrupt)
                 say(texts::text("Main.Prg.TxtInfo1"));
             const Conversion result = tuxscr::convert(resized, screen, frame.picture, param, searchInterrupt);
             if (!quiet && force) {
-                say(both("Conversion terminée, nombre de couleurs dans l'image:", "Conversion done, colours in the picture: ")
-                    + QString::number(result.colours));
+                say(tr("Conversion done, colours in the picture: %1").arg(result.colours));
                 if (result.splitColours > 0)
-                    say(both("Couleurs générées avec split : ", "Colours made with splits: ") + QString::number(result.splitColours));
+                    say(tr("Colours made with splits: %1").arg(result.splitColours));
             }
         }
         current_ = selected;
@@ -185,20 +175,16 @@ void Document::setPlus(bool plus)
 {
     if (screen.plus == plus)
         return;
-    screen.plus = plus;
     if (!plus) {
         // The colours stay where the pens have them: nothing is searched
         // again while the palette is brought back to the CPC's.
         const std::array<int, 16> locks = param.lockState;
         param.lockState.fill(0);
-        for (size_t i = 0; i < 16; ++i)
-            screen.palette[i] = cpcFromPlus(screen.palette[i]);
+        changeMachine(screen, false);
         convert(false);
         param.lockState = locks;
     } else {
-        for (size_t i = 0; i < 16; ++i)
-            screen.palette[i] = screen.palette[i] < 27 ? plusFromCpc(screen.palette[i]) : 0;
-        screen.tidyInterrupts();
+        changeMachine(screen, true);
         convert(false);
     }
 }
@@ -255,7 +241,7 @@ bool Document::readFile(const QString& path, bool single)
         const std::vector<uint8_t> data(bytes.begin() + kAmsdosHeaderSize, bytes.end());
         if (animation) {
             setBlankFrames(count, frameTime_);
-            say(texts::text("Main.Prg.TxtInfo2") + QString::number(count) + QStringLiteral(" images."));
+            say(tr("Animation creation (IMP) with %n picture(s).", nullptr, count));
             screen.setWidth(width << 3);
             screen.setHeight(height << 1);
             size_t at = 0;
@@ -296,8 +282,8 @@ bool Document::readFile(const QString& path, bool single)
         }
         if (!single) {
             setSources(pictures, time);
-            say(texts::text("Main.prg.TxtInfo4")
-                + (pictures.size() > 1 ? texts::text("Main.prg.TxtInfo5") + QString::number(pictures.size()) + QStringLiteral(" images.") : QStringLiteral(".")));
+            say(pictures.size() > 1 ? tr("PC picture read: an animation of %n pictures.", nullptr, static_cast<int>(pictures.size()))
+                                    : tr("PC picture read."));
         } else {
             importSource(pictures.first(), current_);
             say(texts::text("Main.prg.TxtInfo4"));
@@ -324,10 +310,10 @@ bool Document::readPalette(const QString& path)
 {
     const std::optional<std::vector<uint8_t>> file = readHostFile(path);
     if (!file || !readPaletteFile(*file, screen)) {
-        fail(both("Erreur lecture palette...", "The palette could not be read."));
+        fail(tr("The palette could not be read."));
         return false;
     }
-    say(both("Lecture palette ok.", "Palette read."));
+    say(tr("Palette read."));
     screen.tidyInterrupts();
     emit screenChanged();
     return true;
@@ -339,11 +325,11 @@ bool Document::readKit(const QString& path)
     std::array<int, 16> colours;
     std::copy_n(screen.palette.begin(), 16, colours.begin());
     if (!file || !readKitFile(*file, colours)) {
-        fail(both("Erreur lecture palette...", "The palette could not be read."));
+        fail(tr("The palette could not be read."));
         return false;
     }
     std::copy(colours.begin(), colours.end(), screen.palette.begin());
-    say(both("Lecture palette ok.", "Palette read."));
+    say(tr("Palette read."));
     screen.tidyInterrupts();
     emit screenChanged();
     return true;
@@ -406,7 +392,7 @@ bool Document::saveScreen(const QString& path, bool toDsk)
             return false;
         say(texts::text("Main.prg.TxtInfo33") + QString::fromStdString(name));
     }
-    say(both("Sauvegarde image CPC ok.", "CPC picture saved."));
+    say(tr("CPC picture saved."));
     return true;
 }
 
@@ -455,7 +441,7 @@ bool Document::savePacked(const QString& path, const AsmLabels& labels, int form
             say(texts::text("Main.prg.TxtInfo33") + QString::fromStdString(name));
         }
     }
-    say(both("Sauvegarde image compactée ok.", "Packed picture saved."));
+    say(tr("Packed picture saved."));
     return true;
 }
 
@@ -483,17 +469,17 @@ bool Document::savePng(const QString& path)
             }
         }
         if (!rasters.save(single + QStringLiteral("_Rasters.png"), "PNG")) {
-            fail(both("Impossible d'écrire ", "Cannot write ") + QDir::toNativeSeparators(single + QStringLiteral("_Rasters.png")));
+            fail(tr("Cannot write %1").arg(QDir::toNativeSeparators(single + QStringLiteral("_Rasters.png"))));
             return false;
         }
         syncParam();
         if (!write(single + QStringLiteral(".scr"), screenFile(local(single + QStringLiteral(".scr")), screenData(screen, picture(), param, PackMethod::None))))
             return false;
     } else if (!shown().save(path, "PNG")) {
-        fail(both("Impossible d'écrire ", "Cannot write ") + QDir::toNativeSeparators(path));
+        fail(tr("Cannot write %1").arg(QDir::toNativeSeparators(path)));
         return false;
     }
-    say(both("Sauvegarde image PNG ok.", "PNG picture saved."));
+    say(tr("PNG picture saved."));
     return true;
 }
 
@@ -502,8 +488,8 @@ bool Document::saveSprite(const QString& path, const AsmLabels& labels, bool pac
     syncParam();
     if (!write(path, spriteAsm(screen, picture(), param, labels, stamp(), packed ? packMethod : PackMethod::None, progress())))
         return false;
-    say(packed ? both("Sauvegarde sprite assembleur compacté ok.", "Packed sprite saved as a source.")
-               : both("Sauvegarde sprite assembleur ok.", "Sprite saved as a source."));
+    say(packed ? tr("Packed sprite saved as a source.")
+               : tr("Sprite saved as a source."));
     return true;
 }
 
@@ -520,7 +506,7 @@ bool Document::saveImp(const QString& path)
     data.push_back(static_cast<uint8_t>(frameCount()));
     if (!write(path, withAmsdosHeader(local(path), 0x4000, 0xCACA, data)))
         return false;
-    say(both("Sauvegarde animation Impdraw ok.", "Impdraw animation saved."));
+    say(tr("Impdraw animation saved."));
     return true;
 }
 
@@ -544,10 +530,10 @@ bool Document::saveTiles(const QString& path, int tileWidth, int tileHeight)
             }
         }
     if (tooMany || tiles.size() >= 255) {
-        fail(both("Trop de tiles...", "Too many tiles."));
+        fail(tr("Too many tiles."));
         return false;
     }
-    say(both("Nbre de tiles:", "Tiles: ") + QString::number(tiles.size()));
+    say(tr("Tiles: %1").arg(tiles.size()));
     std::vector<uint8_t> data;
     for (const std::vector<uint8_t>& tile : tiles)
         data.insert(data.end(), tile.begin(), tile.end());
@@ -571,7 +557,7 @@ bool Document::savePalette(const QString& path)
     syncParam();
     if (!write(path, paletteFile(local(path), screen, param)))
         return false;
-    say(both("Sauvegarde palette ok.", "Palette saved."));
+    say(tr("Palette saved."));
     return true;
 }
 
@@ -606,7 +592,7 @@ bool Document::saveEgx(const QString& path)
         if (!write(name, screenFile(local(name), screenData(one, screenMemory(one, picture(), true, parity), settings, PackMethod::None))))
             return false;
     }
-    say(both("Sauvegarde des deux images CPC ok.", "The two CPC pictures are saved."));
+    say(tr("The two CPC pictures are saved."));
     return true;
 }
 
@@ -615,7 +601,7 @@ bool Document::saveBump(const QString& path)
     syncParam();
     if (!write(path, bumpAsm(screen, picture(), param, stamp())))
         return false;
-    say(both("Sauvegarde bump ok.", "Bump saved."));
+    say(tr("Bump saved."));
     return true;
 }
 
@@ -624,7 +610,7 @@ bool Document::saveMatrix(const QString& path)
     syncParam();
     if (!write(path, matrixAsm(screen, picture(), param, packMethod, stamp())))
         return false;
-    say(both("Sauvegarde matrice assembleur ok.", "Matrix saved as a source."));
+    say(tr("Matrix saved as a source."));
     return true;
 }
 
@@ -671,7 +657,7 @@ bool Document::saveTunnel(const QString& path)
 bool Document::saveDiffImages(const QString& path)
 {
     using namespace asmgen;
-    say(both("Début sauvegarde DiffImage assembleur...", "Saving the frames' differences as a source..."));
+    say(tr("Saving the frames' differences as a source..."));
     AsmText sw(screen);
     WriteHeader(sw, Text(stamp().version), true);
     sw.WriteLine(S("\tnolist"));
@@ -737,8 +723,7 @@ void Document::convertMissing()
 bool Document::saveAnimation(const QString& path, const AnimOptions& options)
 {
     if (screen.columns * screen.lines > 0x4000) {
-        fail(both("Les animations avec des écrans de plus de 16ko ne sont pas supportées...",
-                  "Animations of screens of more than 16K are not supported."));
+        fail(tr("Animations of screens of more than 16K are not supported."));
         return false;
     }
     syncParam();
@@ -752,13 +737,29 @@ bool Document::saveAnimation(const QString& path, const AnimOptions& options)
     const AnimSource source = animationAsm(screen, pictures, times, param, packMethod, options, stamp(), "Palette", progress());
     if (!write(path, source.text))
         return false;
-    for (const std::string& told : source.told)
-        say(QString::fromStdString(told));
+    for (const AnimNote& note : source.notes) {
+        switch (note.kind) {
+        case AnimNote::Started:
+            say(tr("Saving the animation as a source..."));
+            break;
+        case AnimNote::BytesLost:
+            say(tr("%Ln bytes lost...", nullptr, note.bytes));
+            break;
+        case AnimNote::TotalLength:
+            say(tr("The animation's data take %Ln bytes in all.", nullptr, note.bytes));
+            break;
+        case AnimNote::Overflow:
+            say(tr("More than the memory holds..."));
+            break;
+        case AnimNote::Saved:
+            say(tr("Animation saved as a source."));
+            break;
+        }
+    }
     if (source.overflow)
-        fail(both("Attention ! la taille totale (animation + buffer de décompactage) dépassera ",
-                  "Beware: the whole (animation and the room to unpack it) will be over ")
-             + (options.memory128K ? QStringLiteral("112K") : QStringLiteral("48K"))
-             + both(", risque d'écrasement de la mémoire vidéo et plantage...", ": the screen's memory may be written over, and the program crash."));
+        fail(tr("Beware: the whole (animation and the room to unpack it) will be over %1: the screen's memory may be written "
+                "over, and the program crash.")
+                 .arg(options.memory128K ? QStringLiteral("112K") : QStringLiteral("48K")));
     return true;
 }
 
@@ -773,7 +774,7 @@ bool Document::saveGif(const QString& path)
     }
     const std::vector<uint8_t> gif = animatedGif(pictures, times);
     if (gif.empty() || !write(path, gif)) {
-        fail(both("Erreur lors de la sauvegarde du gif.", "The GIF could not be saved."));
+        fail(tr("The GIF could not be saved."));
         return false;
     }
     return true;
@@ -799,3 +800,5 @@ std::string Document::showProgram()
     const PackMethod method = packMethod == PackMethod::None || packMethod == PackMethod::ZX0Ovs ? PackMethod::ZX0_V2 : packMethod;
     return screenAsm(screen, picture(), settings, method, {}, false, stamp(), progress()).text;
 }
+
+}  // namespace tuxscr

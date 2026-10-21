@@ -21,12 +21,13 @@
 #include <QTimer>
 
 #include "check.h"
+#include "french.h"
 #include "converterwindow.h"
 #include "gui_looks.h"
 #include "palettebar.h"
 #include "penbutton.h"
 #include "prompts.h"
-#include "rasters.h"
+#include "splits/rasters.h"
 #include "splittools.h"
 #include "swatch.h"
 
@@ -126,7 +127,7 @@ int main(int argc, char* argv[])
     bool asked = false;
     whenAsked([&](QDialog* dialog) {
         asked = true;
-        CHECK(dialog->windowTitle() == "Make Palette");
+        CHECK(dialog->windowTitle() == QString::fromUtf8("TuxSCR – Make Palette"));
         CHECK(dialog->findChild<QLabel*>("lblFrom")->text() == "From color" && dialog->findChild<QLabel*>("lblTo")->text() == "To color");
         CHECK(dialog->findChild<QLabel*>("lblStartText")->text() == "Start color" && dialog->findChild<QLabel*>("lblEndText")->text() == "End color");
         auto* bpGenerate = dialog->findChild<QPushButton*>("bpGenerate");
@@ -244,18 +245,24 @@ int main(int argc, char* argv[])
     CHECK(asked);
     CHECK(told.isEmpty());
 
-    // In French.
-    window.setLanguage("FR");
-    whenAsked([&](QDialog* dialog) {
-        CHECK(dialog->windowTitle() == QString::fromUtf8("Générer palette"));
-        CHECK(dialog->findChild<QLabel*>("lblFrom")->text() == "De la couleur" && dialog->findChild<QPushButton*>("bpGenerate")->text() == QString::fromUtf8("Générer"));
-        CHECK(dialog->findChild<QLabel*>("label3")->text() == "V");
-        if (!prefix.isEmpty())
-            CHECK(saveInBothLooks(dialog, prefix + "genpal_fr"));
-        dialog->reject();
-    });
-    open->click();
-    window.setLanguage("EN");
+    // In French, in a window made while TuxSCR's translation is installed.
+    {
+        French french;
+        CHECK(french.loaded());
+        ConverterWindow other(nullptr);
+        installSplitTools(&other);
+        other.show();
+        other.findChild<QCheckBox*>("modePlus")->click();
+        whenAsked([&](QDialog* dialog) {
+            CHECK(dialog->windowTitle() == QString::fromUtf8("TuxSCR – Générer palette"));
+            CHECK(dialog->findChild<QLabel*>("lblFrom")->text() == "De la couleur" && dialog->findChild<QPushButton*>("bpGenerate")->text() == QString::fromUtf8("Générer"));
+            CHECK(dialog->findChild<QLabel*>("label3")->text() == "V");
+            if (!prefix.isEmpty())
+                CHECK(saveInBothLooks(dialog, prefix + "genpal_fr"));
+            dialog->reject();
+        });
+        other.findChild<QPushButton*>("bpGenPal")->click();
+    }
 
     // Back on a CPC, the maker is not offered.
     plus->click();

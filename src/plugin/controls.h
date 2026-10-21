@@ -7,6 +7,8 @@
 #include <QSpinBox>
 #include <QString>
 
+namespace tuxscr {
+
 // What the controls of TuxSCR's windows are made with. A control is known
 // by its object name, which is ConvImgCpc's name for it: that is what gives
 // it its text, in French or in English (texts.h), and what a test finds it
@@ -62,3 +64,5 @@ void setQuietly(Control* control, void (Control::*setter)(Value), Value value)
     (control->*setter)(value);
     control->blockSignals(blocked);
 }
+
+}  // namespace tuxscr

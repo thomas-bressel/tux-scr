@@ -41,8 +41,8 @@ Avec TuxAPE : **Show in TuxAPE** assemble et lance sur le CPC émulé le
 programme qui affiche l'image (une touche le termine) ; **From the CPC Screen**
 reprend ce que le CPC émulé affiche, avec sa palette.
 
-Les textes sont en anglais ou en français (boutons **English** / **Français**),
-ceux de ConvImgCpc pour ce qui vient de lui.
+Les textes sont dans la langue de TuxAPE, anglais ou français : ceux de
+ConvImgCpc pour ce qui vient de lui (voir « Les langues »).
 
 ## Interruptions de palette (CPC+)
 
@@ -105,10 +105,12 @@ entre deux lignes :
 L'écran binaire `.SCR` avec routine incluse n'a pas la place pour cette
 routine : il garde la palette de l'image.
 
-`tests/tuxape_interrupts` assemble le programme écrit avec l'assembleur de
-TuxAPE, le lance sur le Plus de TuxAPE et relit l'image du moniteur ligne par
-ligne : chaque encre a la bonne couleur du premier au dernier point de chaque
-ligne (`-v` donne l'instant où tombe chaque couleur, à la microseconde).
+Le programme écrit a été vérifié en l'assemblant avec l'assembleur de TuxAPE,
+en le lançant sur le Plus de TuxAPE et en relisant l'image du moniteur ligne
+par ligne : chaque encre a la bonne couleur du premier au dernier point de
+chaque ligne. Ce test se servait du cœur de TuxAPE, qu'un plugin ne prend
+pas : il n'est plus dans le dépôt (il reste dans son historique, avant la
+mise en conformité avec `PLUGINS.md`).
 
 ## Le programme en ligne de commande
 
@@ -160,27 +162,63 @@ fichier qu'il ne relit pas lui-même...), TuxSCR fait ce que la fonction veut
 
 ## Compiler
 
-TuxAPE doit se trouver à côté, dans `../TuxAPE` (ou ailleurs avec
-`-DTUXAPE_DIR=...`) : le plugin se compile contre son fichier
-`sdk/plugin.h`, et avec le Qt 6 de TuxAPE.
+TuxSCR suit les conventions des plugins de TuxAPE (`PLUGINS.md`, à la racine
+de TuxAPE) et ne prend de TuxAPE que son dossier `sdk/` : `plugin.h` et le
+module CMake `TuxAPEPlugin.cmake`. TuxAPE doit se trouver à côté, dans
+`../TuxAPE`, ou ailleurs avec `-DTUXAPE_SDK=/chemin/TuxAPE/sdk`. Il lui faut
+la version 4 de l'interface des plugins : la langue de TuxAPE.
 
 ```sh
-cmake --preset dev
+cmake --preset dev          # Qt du système, ou celui du .deps/ de TuxAPE
 cmake --build build -j
+ctest --preset dev
 ```
 
 L'archive à installer est alors dans `dist/` :
 `tuxscr-<version>-<plateforme>.zip`. Elle contient le dossier du plugin :
-`plugin.json`, la bibliothèque et `bin/tuxscr`.
+`plugin.json`, la bibliothèque, `bin/tuxscr` et `LICENSE`, et
+`signature.json` quand la clé de l'auteur est nommée :
+
+```sh
+cmake -S . -B build -DTUXAPE_SIGN_KEY=$HOME/.config/tuxape-signing/moi.key
+cmake --build build
+```
+
+Sans clé nommée, l'archive n'est pas signée : compiler TuxSCR ne le signe
+jamais au nom de quelqu'un par mégarde.
 
 ## Installer
 
-Dans TuxAPE : **Settings ▸ Plugins ▸ Install from ZIP...**, choisir l'archive,
-confirmer. Le menu **Plugins** reçoit « TuxSCR – Screen Converter... ».
-Installer une archive plus récente remplace l'ancienne.
+Dans TuxAPE : **Settings ▸ Plugins ▸ Install from ZIP...** (**Réglages ▸
+Plug-ins** en français), choisir l'archive, confirmer. Le menu **Plugins**
+reçoit « TuxSCR – Screen Converter... ». Installer une archive plus récente
+remplace l'ancienne.
 
-À la main : décompresser l'archive dans le dossier `plugins` de TuxAPE, puis
-relancer TuxAPE.
+## Les langues
+
+TuxSCR parle la langue de TuxAPE : anglais, la langue de ses sources, ou
+français. Il n'a plus de bouton à lui pour en changer : TuxAPE redémarre pour
+changer la sienne. Le champ `langue` du fichier de réglages de ConvImgCpc est
+lu et réécrit tel quel, mais ne choisit plus rien.
+
+Les textes des fenêtres de ConvImgCpc sont gardés par le nom de leur
+contrôle (`Main.bpLoad`) : en anglais dans `src/plugin/windowtexts.h`, que
+`tools/make_tables.py` recopie du `Multilingue.cs` de ConvImgCpc, et dans les
+tables de TuxSCR pour ce qu'il ajoute. Leur traduction, avec celle de tous
+les autres textes, est dans `translations/tuxscr_fr.ts`, compilée dans la
+bibliothèque et chargée au démarrage du plugin. Après un changement des
+textes :
+
+```sh
+cmake --build build --target tuxscr_update_translations   # lupdate
+tools/make_tables.py --french translations/tuxscr_fr.ts    # le français de ConvImgCpc, pour ses textes
+linguist translations/tuxscr_fr.ts                         # traduire le reste de ce qui est nouveau
+cmake --build build
+```
+
+Le moteur n'a pas de texte : il rend des données (les notes d'une
+animation, `AnimNote`) que les fenêtres disent dans la langue de TuxAPE. Le
+programme en ligne de commande écrit en anglais.
 
 ## Tests
 
@@ -188,29 +226,31 @@ relancer TuxAPE.
 ctest --preset dev
 ```
 
-Les tests de l'interface (`gui_*`, `plugin_window`) pilotent les fenêtres sans
-écran ; `engine_*` et `formats_*` vérifient la conversion, les compactages et
-les images disque ; `cli_convert` lance le programme ; `tuxape_interrupts`
-(construit si TuxAPE est compilé dans `../TuxAPE/build`) fait tourner sur le
-cœur de TuxAPE les programmes écrits : interruptions de palette, écrans,
-animations.
+Les tests du moteur (`engine_*`) vérifient la conversion, les compactages,
+les images disque et les split rasters ; `cli_convert` lance le programme ;
+`plugin_window` charge le plugin comme TuxAPE le charge, en anglais, en
+français et dans une langue qu'il n'a pas ; les tests de l'interface
+(`gui_*`) pilotent les fenêtres sans écran, en anglais puis, pour chaque
+fenêtre, dans une fenêtre faite pendant que la traduction française est
+installée (`tests/french.h`).
 
 ## Organisation
 
-Le projet est écrit en C++20. Les bibliothèques du moteur ne dépendent ni de
-Qt ni du système, et n'écrivent rien sur le disque : elles rendent des
-fichiers en mémoire.
+Le projet est écrit en C++20. Le moteur ne dépend ni de Qt, ni de TuxAPE, ni
+du système, n'écrit rien sur le disque (il rend des fichiers en mémoire) et
+n'a aucun texte pour l'utilisateur.
 
 | Dossier | Contenu |
 |---|---|
-| `src/base` | version, images du PC |
-| `src/engine` | l'écran du CPC et sa palette, l'image en encres, tramage, conversion, interruptions de palette |
-| `src/formats` | en-têtes AMSDOS, compactages, image disque, écrans, palettes, réglages, animations, sources assembleur |
-| `src/plugin` | la fenêtre et ses outils (bibliothèque `tuxscr_ui`) |
-| `src/sprites` | sprites matériels du Plus : éditeur, capture, affichage sur l'image |
-| `src/splits` | split rasters, table de rasters du Plus, générateur de palette |
-| `src/module` | ce que TuxAPE charge |
-| `src/cli` | le programme `tuxscr` |
+| `src/engine/base` | version, images |
+| `src/engine/convert` | l'écran du CPC et sa palette, l'image en encres, tramage, conversion, interruptions de palette |
+| `src/engine/formats` | en-têtes AMSDOS, compactages, image disque, écrans, palettes, réglages, animations, sources assembleur |
+| `src/engine/splits` | split rasters et table de rasters du Plus, sans leurs fenêtres |
+| `src/plugin` | les fenêtres (`tuxscr_ui`), leurs textes, la classe chargée (`tuxscr`), tout dans `namespace tuxscr` ; `pictures` (`tuxscr_pictures`) lit les images du PC avec Qt, pour les fenêtres et pour le programme |
+| `src/plugin/sprites` | sprites matériels du Plus : éditeur, capture, affichage sur l'image |
+| `src/plugin/splits` | éditeur de splits, table de rasters du Plus, générateur de palette |
+| `src/cli` | le programme `tuxscr` : le moteur, et les images du PC lues avec Qt ; aucune fenêtre |
+| `translations` | la traduction française |
 | `tests` | programmes de test |
 | `tools` | ce qui recopie les tables et les textes de ConvImgCpc |
 | `notes` | écarts voulus avec ConvImgCpc |

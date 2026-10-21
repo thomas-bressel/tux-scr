@@ -2,8 +2,6 @@
 
 #include <QWidget>
 
-class ConverterWindow;
-class Document;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -12,6 +10,11 @@ class QScrollBar;
 class QSpinBox;
 class QTimer;
 class QToolButton;
+
+namespace tuxscr {
+
+class ConverterWindow;
+class Document;
 
 // The frames of an animation (ConvImgCpc's "Animation" window): five of
 // them from the current one on, each with how long it stays and a button
@@ -25,7 +28,7 @@ public:
     explicit AnimationPanel(ConverterWindow* window);
 
     void refresh();
-    void retranslate();
+    void applyTexts();
     // Asks how the animation is to be saved as a source, and saves it.
     bool saveAnimation(const QString& path);
 
@@ -49,3 +52,5 @@ private:
     qint64 shownSince_ = 0;
     bool filling_ = false;
 };
+
+}  // namespace tuxscr

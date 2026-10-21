@@ -5,6 +5,8 @@
 
 #include <QColor>
 
+namespace tuxscr {
+
 // The colours TuxSCR chooses itself are held to WCAG 2's level AAA, as
 // TuxAPE's are: text stands out from what is behind it by 7 to 1 at least,
 // and what is drawn to tell a state by 3 to 1. The colours of a CPC's
@@ -51,3 +53,5 @@ inline QColor readable(const QColor& wanted, const QColor& against, double ratio
     }
     return end;
 }
+
+}  // namespace tuxscr

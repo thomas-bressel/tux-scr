@@ -9,6 +9,8 @@
 
 class QWidget;
 
+namespace tuxscr {
+
 // What TuxSCR's windows tell and ask in a box of their own: a problem, a
 // piece of news, the name of a file to read or to write. A test that drives
 // the windows has no one to answer: it says what the answers are, and notes
@@ -38,3 +40,5 @@ void setSaveAnswerer(FileAnswerer answerer);
 std::optional<std::vector<uint8_t>> readHostFile(const QString& path);
 bool writeHostFile(const QString& path, const std::vector<uint8_t>& bytes);
 bool writeHostText(const QString& path, const std::string& text);
+
+}  // namespace tuxscr

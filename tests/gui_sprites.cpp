@@ -27,6 +27,7 @@
 #include <QTimer>
 
 #include "check.h"
+#include "french.h"
 #include "converterwindow.h"
 #include "formats/amsdos.h"
 #include "formats/pack.h"
@@ -189,7 +190,7 @@ int main(int argc, char* argv[])
     // Asked for again, it is the same window.
     open->click();
     CHECK_EQ(window.findChildren<SpriteEditor*>().size(), 1);
-    CHECK(editor->windowTitle() == "Editing Hard Sprites");
+    CHECK(editor->windowTitle() == QString::fromUtf8("TuxSCR – Editing Hard Sprites"));
     // Sprites that had no palette take the picture's.
     for (size_t pen = 0; pen < 16; ++pen)
         CHECK_EQ(screen.spritePalette[pen], screen.palette[pen]);
@@ -677,7 +678,7 @@ int main(int argc, char* argv[])
     answer = scratch.filePath("bank4.asm");
     answerFilter = 1;
     whenAsked("SaveMedia", [](QDialog* dialog) {
-        CHECK(dialog->windowTitle() == "Save Sprites (asm format)");
+        CHECK(dialog->windowTitle() == QString::fromUtf8("TuxSCR – Save Sprites (asm format)"));
         auto* media = dialog->findChild<QLineEdit*>("txbLabelMedia");
         auto* colours = dialog->findChild<QLineEdit*>("txbLabelPalette");
         CHECK(media && colours && media->text() == "bank4" && colours->text() == "Palettebank4");
@@ -844,17 +845,32 @@ int main(int argc, char* argv[])
     CHECK(told.size() == 1 && told.value(0) == "Unable to save sprites.");
     told.clear();
 
-    // ---- In French ----
-    window.setLanguage("FR");
-    CHECK(editor->windowTitle() == "Edition Sprites Hard");
-    CHECK(label("label1")->text() == "Bp gauche" && label("label2")->text() == "Bp droite");
-    CHECK(button("bpSave")->text() == "bank courante" && button("bpSaveAll")->text() == "toutes les banks");
-    CHECK(button("chkWithPal")->text() == "Avec palette" && button("rbLine")->text() == "Ligne" && button("bpTest")->text() == "Test !");
-    CHECK(label("label3")->text() == "Zoom X" && label("lblSelSprite")->text().startsWith("Sprite n° : "));
-    CHECK(button("bpCopySprite")->toolTip() == "Copier le sprite");
-    if (!prefix.isEmpty())
-        CHECK(saveInBothLooks(editor, prefix + "sprites_editor_fr"));
-    window.setLanguage("EN");
+    // ---- In French, in a window made while TuxSCR's translation is installed ----
+    {
+        French french;
+        CHECK(french.loaded());
+        ConverterWindow other(nullptr);
+        installSpriteTools(&other);
+        other.show();
+        other.findChild<QCheckBox*>("modePlus")->click();
+        other.findChild<QPushButton*>("bpEditSprites")->click();
+        auto* otherEditor = other.findChild<SpriteEditor*>("EditSprites");
+        CHECK(otherEditor != nullptr);
+        if (otherEditor) {
+            const auto frenchButton = [otherEditor](const char* name) { return otherEditor->findChild<QAbstractButton*>(name); };
+            const auto frenchLabel = [otherEditor](const char* name) { return otherEditor->findChild<QLabel*>(name); };
+            CHECK(otherEditor->windowTitle() == "TuxSCR – Edition Sprites Hard");
+            CHECK(frenchLabel("label1")->text() == "Bp gauche" && frenchLabel("label2")->text() == "Bp droite");
+            CHECK(frenchButton("bpSave")->text() == "bank courante" && frenchButton("bpSaveAll")->text() == "toutes les banks");
+            CHECK(frenchButton("chkWithPal")->text() == "Avec palette" && frenchButton("rbLine")->text() == "Ligne" && frenchButton("bpTest")->text() == "Test !");
+            CHECK(frenchLabel("label3")->text() == "Zoom X" && frenchLabel("lblSelSprite")->text().startsWith("Sprite n° : "));
+            CHECK(frenchButton("bpCopySprite")->toolTip() == "Copier le sprite");
+            if (!prefix.isEmpty())
+                CHECK(saveInBothLooks(otherEditor, prefix + "sprites_editor_fr"));
+            otherEditor->close();
+        }
+    }
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     CHECK(button("bpSave")->text() == "current bank" && button("bpCopySprite")->toolTip() == "Copy the sprite");
 
     // ---- Pictures of the windows ----

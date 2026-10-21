@@ -3,13 +3,16 @@
 #include <QList>
 #include <QWidget>
 
-class Document;
-class PenButton;
 class QCheckBox;
 class QLabel;
 class QPushButton;
 class QSpinBox;
 class QVBoxLayout;
+
+namespace tuxscr {
+
+class Document;
+class PenButton;
 
 // The palette interrupts of a Plus: lines of the picture where the pens
 // take other colours. "Add Palette Interrupt" turns them on; each one added
@@ -26,7 +29,7 @@ public:
 
     // Shows what the document has: called when it changed.
     void refresh();
-    void retranslate();
+    void applyTexts();
 
     // The lines of the interrupts in use, and the one being set (-1 for
     // none): what the picture marks.
@@ -73,3 +76,5 @@ private:
     void penClicked(int row, int pen, bool right);
     void exportText();
 };
+
+}  // namespace tuxscr

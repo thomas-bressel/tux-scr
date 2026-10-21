@@ -9,6 +9,8 @@
 #include "pictures.h"
 #include "texts.h"
 
+namespace tuxscr {
+
 PaletteBar::PaletteBar(Document* document, QWidget* parent)
     : QWidget(parent)
     , document_(document)
@@ -43,20 +45,17 @@ PaletteBar::PaletteBar(Document* document, QWidget* parent)
         });
     }
     grid->setColumnStretch(17, 1);
-    retranslate();
+    applyTexts();
     refresh();
 }
 
-void PaletteBar::retranslate()
+void PaletteBar::applyTexts()
 {
-    const bool english = texts::language() == QLatin1String("EN");
-    disableLabel_->setText(english ? QStringLiteral("Disable") : QStringLiteral("Désactiver"));
-    lockLabel_->setText(english ? QStringLiteral("Lock") : QStringLiteral("Verrouiller"));
+    disableLabel_->setText(tr("Disable"));
+    lockLabel_->setText(tr("Lock"));
     for (int i = 0; i < 16; ++i) {
-        disables_[i]->setToolTip(english ? QStringLiteral("Leave pen %1 out of the conversion").arg(i)
-                                         : QStringLiteral("Ne pas utiliser l'encre %1 dans la conversion").arg(i));
-        locks_[i]->setToolTip(english ? QStringLiteral("Keep the colour of pen %1").arg(i)
-                                      : QStringLiteral("Garder la couleur de l'encre %1").arg(i));
+        disables_[i]->setToolTip(tr("Leave pen %1 out of the conversion").arg(i));
+        locks_[i]->setToolTip(tr("Keep the colour of pen %1").arg(i));
         disables_[i]->setAccessibleName(disables_[i]->toolTip());
         locks_[i]->setAccessibleName(locks_[i]->toolTip());
     }
@@ -72,9 +71,7 @@ void PaletteBar::refresh()
         const bool disabled = document_->param.disableState[pen] != 0;
         pens_[i]->setColour(toQColor(screen.rgb(screen.palette[pen])));
         pens_[i]->setMark(used[pen] ? PenButton::Mark::Tick : PenButton::Mark::None);
-        pens_[i]->setToolTip(texts::language() == QLatin1String("EN")
-                                 ? QStringLiteral("Pen %1%2").arg(i).arg(used[pen] ? QStringLiteral(", used by the picture") : QStringLiteral(", not used"))
-                                 : QStringLiteral("Encre %1%2").arg(i).arg(used[pen] ? QStringLiteral(", utilisée par l'image") : QStringLiteral(", non utilisée")));
+        pens_[i]->setToolTip((used[pen] ? tr("Pen %1, used by the picture") : tr("Pen %1, not used")).arg(i));
         pens_[i]->setAccessibleName(pens_[i]->toolTip());
         pens_[i]->setVisible(i < maxPen && !disabled);
         locks_[i]->setVisible(i < maxPen && !disabled);
@@ -87,3 +84,5 @@ void PaletteBar::refresh()
         disables_[i]->blockSignals(wasDisabled);
     }
 }
+
+}  // namespace tuxscr

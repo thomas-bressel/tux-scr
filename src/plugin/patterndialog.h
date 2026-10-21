@@ -2,12 +2,15 @@
 
 #include <QDialog>
 
-class ConverterWindow;
-class Document;
-class PenButton;
 class QLabel;
 class QPushButton;
 class QSpinBox;
+
+namespace tuxscr {
+
+class ConverterWindow;
+class Document;
+class PenButton;
 
 // The sixteen patterns of mode ASC-UT (ConvImgCpc's "Edition trames"):
 // each is 4 by 4 pixels of mode 1. They are shown in a row; the one chosen
@@ -50,3 +53,5 @@ private:
     void savePatterns();
     void makePatterns();
 };
+
+}  // namespace tuxscr

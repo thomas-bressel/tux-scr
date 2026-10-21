@@ -4,6 +4,8 @@
 #include <QImageReader>
 #include <QPainter>
 
+namespace tuxscr {
+
 tuxscr::Bitmap toBitmap(const QImage& image)
 {
     if (image.isNull())
@@ -100,3 +102,5 @@ tuxscr::Bitmap resizeSource(const QImage& source, const tuxscr::Screen& screen, 
     }
     return toBitmap(target);
 }
+
+}  // namespace tuxscr

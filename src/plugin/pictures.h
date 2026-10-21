@@ -5,8 +5,10 @@
 #include <QList>
 
 #include "base/bitmap.h"
-#include "engine/param.h"
-#include "engine/screen.h"
+#include "convert/param.h"
+#include "convert/screen.h"
+
+namespace tuxscr {
 
 // Pictures between Qt and the engine, and what Qt does for the conversion:
 // reading a file's pictures, and bringing one to the size of the CPC's
@@ -33,3 +35,5 @@ QList<QImage> readPictures(const QByteArray& file, int* time = nullptr);
 // say: stretched to fit, kept to its proportions inside or over it, or
 // placed and sized by the user. What it does not cover has pen 0's colour.
 tuxscr::Bitmap resizeSource(const QImage& source, const tuxscr::Screen& screen, const tuxscr::Param& param);
+
+}  // namespace tuxscr

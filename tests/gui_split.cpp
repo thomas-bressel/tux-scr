@@ -25,13 +25,14 @@
 #include <QTimer>
 
 #include "check.h"
+#include "french.h"
 #include "converterwindow.h"
 #include "gui_looks.h"
 #include "penbutton.h"
 #include "pictures.h"
 #include "pictureview.h"
 #include "prompts.h"
-#include "splitasm.h"
+#include "splits/splitasm.h"
 #include "spliteditor.h"
 #include "splittools.h"
 #include "swatch.h"
@@ -135,7 +136,7 @@ int main(int argc, char* argv[])
     CHECK(editor && editor->isVisible() && editor->isWindow());
     if (!editor)
         return checkSummary("gui_split");
-    CHECK(editor->windowTitle() == "Split Editor");
+    CHECK(editor->windowTitle() == QString::fromUtf8("TuxSCR – Split Editor"));
     // Clicked again, it is the same window.
     open->click();
     CHECK_EQ(window.findChildren<SplitEditor*>().size(), 1);
@@ -410,7 +411,7 @@ int main(int argc, char* argv[])
         if (!dialog)
             return;
         asked = true;
-        CHECK(dialog->windowTitle() == "Import a Split Picture");
+        CHECK(dialog->windowTitle() == QString::fromUtf8("TuxSCR – Import a Split Picture"));
         auto* bpLire = dialog->findChild<QPushButton*>("bpLire");
         auto* pen = dialog->findChild<QSpinBox*>("numPen");
         auto* listErr = dialog->findChild<QListWidget*>("listErr");
@@ -453,15 +454,29 @@ int main(int argc, char* argv[])
     CHECK(lblColor[0]->colour() == cpc(6));
     told.clear();
 
-    // In French, as the main window is; and back.
-    window.setLanguage("FR");
-    CHECK(editor->windowTitle() == QString::fromUtf8("Éditeur de splits"));
-    CHECK(bpLoad->text() == "Lire Splits" && bpSave->text() == "Sauver Splits" && bpCopieLigne->text() == QString::fromUtf8("Copier ligne précédente"));
-    CHECK(editor->findChild<QLabel*>("label1")->text() == "Ligne" && editor->findChild<QLabel*>("label13")->text() == "Couleur");
-    CHECK(editor->findChild<QLabel*>("label2")->text() == "Largeur" && chkChangeMode->text() == "Changement de mode ligne suivante");
-    if (!prefix.isEmpty())
-        CHECK(saveInBothLooks(editor, prefix + "split_editor_fr"));
-    window.setLanguage("EN");
+    // In French, in a window made while TuxSCR's translation is installed.
+    {
+        French french;
+        CHECK(french.loaded());
+        ConverterWindow other(nullptr);
+        installSplitTools(&other);
+        other.show();
+        other.findChild<QPushButton*>("bpEditSplit")->click();
+        auto* otherEditor = other.findChild<SplitEditor*>("EditSplit");
+        CHECK(otherEditor != nullptr);
+        if (otherEditor) {
+            CHECK(otherEditor->windowTitle() == QString::fromUtf8("TuxSCR – Éditeur de splits"));
+            CHECK(otherEditor->findChild<QPushButton*>("bpLoad")->text() == "Lire Splits" && otherEditor->findChild<QPushButton*>("bpSave")->text() == "Sauver Splits");
+            CHECK(otherEditor->findChild<QPushButton*>("bpCopieLigne")->text() == QString::fromUtf8("Copier ligne précédente"));
+            CHECK(otherEditor->findChild<QLabel*>("label1")->text() == "Ligne" && otherEditor->findChild<QLabel*>("label13")->text() == "Couleur");
+            CHECK(otherEditor->findChild<QLabel*>("label2")->text() == "Largeur");
+            CHECK(otherEditor->findChild<QCheckBox*>("chkChangeMode")->text() == "Changement de mode ligne suivante");
+            if (!prefix.isEmpty())
+                CHECK(saveInBothLooks(otherEditor, prefix + "split_editor_fr"));
+            otherEditor->close();
+        }
+    }
+    QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     CHECK(bpLoad->text() == "Load Splits" && editor->findChild<QLabel*>("label1")->text() == "Line");
     // The main window's own controls of the same names kept their texts.
     CHECK(window.findChild<QPushButton*>("bpLoad") != bpLoad);
@@ -479,8 +494,6 @@ int main(int argc, char* argv[])
         again->close();
     QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
     document->touch();
-    window.setLanguage("FR");
-    window.setLanguage("EN");
     CHECK(told.isEmpty());
 
     // The editor is not offered on a Plus, whose colours are not the Gate
