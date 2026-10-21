@@ -1,15 +1,5 @@
 set(CMAKE_AUTOMOC ON)
 
-# Pictures between Qt and the engine: a file's pictures read, and one
-# brought to the size of the CPC's screen. Qt's pictures only, no window:
-# the command-line program reads its pictures with it too.
-add_library(tuxscr_pictures STATIC
-    pictures.cpp
-    pictures.h
-)
-target_include_directories(tuxscr_pictures PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(tuxscr_pictures PUBLIC tuxscr_convert tuxscr_base Qt6::Gui)
-
 # The windows are a library, so that tests can drive them; the plugin itself
 # is no more than what TuxAPE loads and talks to.
 add_library(tuxscr_ui STATIC
@@ -92,7 +82,7 @@ add_library(tuxscr_ui STATIC
 )
 target_include_directories(tuxscr_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/splits
                                             ${CMAKE_CURRENT_SOURCE_DIR}/sprites ${TUXAPE_SDK})
-target_link_libraries(tuxscr_ui PUBLIC tuxscr_pictures tuxscr_splits tuxscr_formats tuxscr_convert tuxscr_base Qt6::Widgets)
+target_link_libraries(tuxscr_ui PUBLIC tuxscr_io tuxscr_splits tuxscr_formats tuxscr_convert tuxscr_base Qt6::Widgets)
 
 # What TuxAPE loads: the plugin's class, and no more. tuxape_add_plugin()
 # names it after the plugin's id.

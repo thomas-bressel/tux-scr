@@ -38,6 +38,9 @@ endif()
 # The conversion and the files it writes, without Qt: tested by themselves,
 # and what the command-line program is made of.
 add_subdirectory(src/engine)
+# The PC's pictures read with Qt, without a window: for the windows and
+# the command-line program.
+add_subdirectory(src/io)
 # What TuxAPE loads: the windows, and the plugin's class.
 add_subdirectory(src/plugin)
 # tuxscr: ConvImgCpc's command line.

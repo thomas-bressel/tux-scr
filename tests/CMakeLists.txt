@@ -28,7 +28,8 @@ foreach(source ${TUXSCR_GUI_TESTS})
     add_executable(${test} ${source})
     target_link_libraries(${test} PRIVATE tuxscr_ui Qt6::Test)
     # TuxSCR's French, which the plugin's build makes for its library.
-    target_compile_definitions(${test} PRIVATE TUXSCR_FRENCH="${CMAKE_BINARY_DIR}/tuxscr_fr.qm")
+    target_compile_definitions(${test} PRIVATE
+        TUXSCR_FRENCH="$<FILTER:$<TARGET_PROPERTY:tuxscr,TUXAPE_QM_FILES>,INCLUDE,_fr[.]qm$>")
     add_dependencies(${test} tuxscr)
     add_test(NAME ${test} COMMAND ${test})
     set_tests_properties(${test} PROPERTIES ENVIRONMENT QT_QPA_PLATFORM=offscreen)

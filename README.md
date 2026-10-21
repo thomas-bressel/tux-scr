@@ -246,7 +246,8 @@ n'a aucun texte pour l'utilisateur.
 | `src/engine/convert` | l'écran du CPC et sa palette, l'image en encres, tramage, conversion, interruptions de palette |
 | `src/engine/formats` | en-têtes AMSDOS, compactages, image disque, écrans, palettes, réglages, animations, sources assembleur |
 | `src/engine/splits` | split rasters et table de rasters du Plus, sans leurs fenêtres |
-| `src/plugin` | les fenêtres (`tuxscr_ui`), leurs textes, la classe chargée (`tuxscr`), tout dans `namespace tuxscr` ; `pictures` (`tuxscr_pictures`) lit les images du PC avec Qt, pour les fenêtres et pour le programme |
+| `src/io` | les images du PC lues avec Qt, sans fenêtre (`tuxscr_io`) : pour les fenêtres et pour le programme |
+| `src/plugin` | les fenêtres (`tuxscr_ui`), leurs textes, la classe chargée (`tuxscr`), tout dans `namespace tuxscr` |
 | `src/plugin/sprites` | sprites matériels du Plus : éditeur, capture, affichage sur l'image |
 | `src/plugin/splits` | éditeur de splits, table de rasters du Plus, générateur de palette |
 | `src/cli` | le programme `tuxscr` : le moteur, et les images du PC lues avec Qt ; aucune fenêtre |
