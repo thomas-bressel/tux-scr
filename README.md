@@ -11,7 +11,7 @@ palette** du CPC Plus.
 ## Ce qu'il fait
 
 La fenêtre s'ouvre par le menu **Plugins ▸ TuxSCR – Screen Converter...**
-(Ctrl+I) ou par son bouton dans le panneau du bas. À gauche, ce que ConvImgCpc
+(Ctrl+Maj+F5) ou par son bouton dans le panneau du bas. À gauche, ce que ConvImgCpc
 a dans sa fenêtre principale ; à droite, sa fenêtre « Image CPC » : la palette,
 l'image, et dessous les outils en onglets.
 
@@ -162,7 +162,7 @@ fichier qu'il ne relit pas lui-même...), TuxSCR fait ce que la fonction veut
 
 TuxAPE doit se trouver à côté, dans `../TuxAPE` (ou ailleurs avec
 `-DTUXAPE_DIR=...`) : le plugin se compile contre son fichier
-`src/app/plugin.h`, et avec le Qt 6 de TuxAPE.
+`sdk/plugin.h`, et avec le Qt 6 de TuxAPE.
 
 ```sh
 cmake --preset dev

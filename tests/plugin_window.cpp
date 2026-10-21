@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
         // One entry, with its key and its button; no window until it is chosen.
         CHECK_EQ(host.actions.size(), 1);
         CHECK(host.actions.size() == 1 && host.actions[0]->text() == "TuxSCR – &Screen Converter...");
-        CHECK(host.actions.size() == 1 && host.actions[0]->shortcut() == QKeySequence(Qt::CTRL | Qt::Key_I));
+        CHECK(host.actions.size() == 1 && host.actions[0]->shortcut() == QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F5));
         CHECK(host.buttons == 1 && host.pictures == 1);
         CHECK(converterWindow() == nullptr);
         // A change of look has the button's picture drawn again.

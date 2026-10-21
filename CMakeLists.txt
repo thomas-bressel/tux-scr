@@ -16,10 +16,10 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-# TuxAPE's sources: all the plugin needs of them is src/app/plugin.h.
+# TuxAPE's sources: all the plugin needs of them is its plugin SDK, sdk/plugin.h.
 set(TUXAPE_DIR "${CMAKE_SOURCE_DIR}/../TuxAPE" CACHE PATH "TuxAPE's source tree")
-if(NOT EXISTS "${TUXAPE_DIR}/src/app/plugin.h")
-    message(FATAL_ERROR "TuxAPE's plugin.h is not in ${TUXAPE_DIR}/src/app: set TUXAPE_DIR to TuxAPE's source tree.")
+if(NOT EXISTS "${TUXAPE_DIR}/sdk/plugin.h")
+    message(FATAL_ERROR "TuxAPE's plugin.h is not in ${TUXAPE_DIR}/sdk: set TUXAPE_DIR to TuxAPE's source tree.")
 endif()
 
 option(TUXSCR_BUILD_TESTS "Build the test programs" ON)
@@ -65,12 +65,24 @@ set(TUXSCR_ARCHIVE "${CMAKE_SOURCE_DIR}/dist/tuxscr-${PROJECT_VERSION}-${TUXSCR_
 configure_file(plugin.json.in "${TUXSCR_STAGE}/tuxscr/plugin.json" @ONLY)
 # The command-line program goes with it, in the folder's bin: TuxAPE makes
 # what it unpacks there a program that can be run.
+# Signed with its author's secret key when there is one (TUXAPE_SIGN_KEY,
+# made by TuxAPE's tuxape-plugin-sign, which TUXAPE_SIGN_TOOL names): the
+# signature goes in the folder, over its other files, before it is packed.
+set(TUXAPE_SIGN_KEY "$ENV{HOME}/.config/tuxape-signing/tuxape.key" CACHE FILEPATH "The secret key the plugin is signed with")
+set(TUXAPE_SIGN_TOOL "${TUXAPE_DIR}/build/src/sign/tuxape-plugin-sign" CACHE FILEPATH "TuxAPE's tuxape-plugin-sign")
+if(EXISTS "${TUXAPE_SIGN_KEY}" AND EXISTS "${TUXAPE_SIGN_TOOL}")
+    set(TUXSCR_SIGN "${TUXAPE_SIGN_TOOL}" sign "${TUXSCR_STAGE}/tuxscr" "${TUXAPE_SIGN_KEY}")
+else()
+    message(STATUS "The archive is not signed: no secret key (TUXAPE_SIGN_KEY) or no tuxape-plugin-sign (TUXAPE_SIGN_TOOL)")
+    set(TUXSCR_SIGN "${CMAKE_COMMAND}" -E rm -f "${TUXSCR_STAGE}/tuxscr/signature.json")
+endif()
 add_custom_target(plugin_zip ALL
     COMMAND ${CMAKE_COMMAND} -E make_directory "${TUXSCR_STAGE}/tuxscr/${TUXSCR_PLATFORM}" "${TUXSCR_STAGE}/tuxscr/bin"
             "${CMAKE_SOURCE_DIR}/dist"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:tuxscr>" "${TUXSCR_STAGE}/tuxscr/${TUXSCR_PLATFORM}/"
     COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:tuxscr_cli>" "${TUXSCR_STAGE}/tuxscr/bin/"
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/LICENSE" "${TUXSCR_STAGE}/tuxscr/"
+    COMMAND ${TUXSCR_SIGN}
     COMMAND ${CMAKE_COMMAND} -E chdir "${TUXSCR_STAGE}"
             ${CMAKE_COMMAND} -E tar cf "${TUXSCR_ARCHIVE}" --format=zip tuxscr
     DEPENDS tuxscr tuxscr_cli

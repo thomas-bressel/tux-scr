@@ -12,7 +12,7 @@
 bool TuxScrPlugin::start(tuxape::PluginHost* host, QString*)
 {
     host_ = host;
-    action_ = host->addAction(tr("TuxSCR – &Screen Converter..."), QKeySequence(Qt::CTRL | Qt::Key_I));
+    action_ = host->addAction(tr("TuxSCR – &Screen Converter..."), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_F5));
     host->addButton(action_, screenIcon());
     connect(action_, &QAction::triggered, this, &TuxScrPlugin::showWindow);
     qApp->installEventFilter(this);

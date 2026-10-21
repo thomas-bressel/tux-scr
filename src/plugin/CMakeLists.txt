@@ -44,5 +44,5 @@ add_library(tuxscr_ui STATIC
     icons.cpp
     icons.h
 )
-target_include_directories(tuxscr_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${TUXAPE_DIR}/src/app)
+target_include_directories(tuxscr_ui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${TUXAPE_DIR}/sdk)
 target_link_libraries(tuxscr_ui PUBLIC tuxscr_formats tuxscr_engine tuxscr_base Qt6::Widgets)
